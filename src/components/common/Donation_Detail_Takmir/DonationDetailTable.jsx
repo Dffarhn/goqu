@@ -202,7 +202,7 @@ const DonationTable = ({ title, data = [], loading = false }) => {
         </div>
 
         {/* Items per page selector */}
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex justify-between items-center text-black mb-3">
           <select
             value={itemsPerPage}
             onChange={(e) => {
@@ -224,7 +224,7 @@ const DonationTable = ({ title, data = [], loading = false }) => {
       </div>
 
       {/* Table Container - Flexible height */}
-      <div className="flex-1 mx-4 mb-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+      <div className="flex-1 text-black mx-4 mb-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
         {loading ? (
           <div className="flex-1 flex flex-col justify-center items-center gap-3">
             <div className="animate-spin rounded-full h-8 w-8 border-3 border-blue-500 border-t-transparent"></div>
