@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import axiosInstance from "../../../api/axiosInstance";
+import toast from "react-hot-toast";
 
 const KelolaIdentitasMasjidPage = () => {
   // Format ISO ke "yyyy-MM-dd" untuk input type="date"
@@ -93,30 +94,48 @@ const KelolaIdentitasMasjidPage = () => {
     try {
       setLoading(true);
 
-      // Submit updated data back to API
-      const response = await fetch(
-        `${process.env.REACT_APP_BASEURL || ""}/masjid/takmir`,
-        {
-          method: "PUT", // or 'PATCH' depending on your API
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Validate form data
+      if (
+        !formData.namaMasjid ||
+        !formData.alamatMasjid ||
+        !formData.nomorTelponMasjid ||
+        !formData.tahunBerdiri ||
+        !formData.statusKepemilikan ||
+        !formData.luasTanah ||
+        !formData.kapasitasMasjid ||
+        !formData.deskripsiMasjid ||
+        !formData.visi ||
+        !formData.misi
+      ) {
+        alert("Mohon lengkapi semua field sebelum menyimpan.");
+        return;
       }
 
-      const result = await response.json();
-      console.log("Form submitted successfully:", result);
+      // Prepare data for submission
+      const updatedData = {
+        Nama: formData.namaMasjid,
+        Alamat: formData.alamatMasjid,
+        NomorTelepon: formData.nomorTelponMasjid,
+        TanggalBerdiri: formData.tahunBerdiri,
+        StatusKepemilikan: formData.statusKepemilikan,
+        LuasTanah: parseFloat(formData.luasTanah),
+        Kapasitas_Jamaah: formData.kapasitasMasjid,
+        Deskripsi: formData.deskripsiMasjid,
+        Visi: formData.visi,
+        Misi: formData.misi,
+      };
 
+      // Submit updated data back to API
+      const response = await axiosInstance.patch("/masjid", updatedData);
+
+      if (response.data.statusCode != 200) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       // You might want to show a success message here
-      alert("Data berhasil disimpan!");
+      toast.success("Data berhasil disimpan!");
     } catch (err) {
       console.error("Error submitting form:", err);
-      alert("Gagal menyimpan data. Silakan coba lagi.");
+      toast.error("Gagal menyimpan data. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }

@@ -17,18 +17,54 @@ import {
   FileText,
   Camera,
   Images,
+  Loader2,
+  Pencil,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TakmirLayout from "../../../layouts/takmir_layout";
+import axiosInstance from "../../../api/axiosInstance";
+import toast from "react-hot-toast";
 
 const DokumenMasjidPage = () => {
   const [uploadedFiles, setUploadedFiles] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const [masjidData, setMasjidData] = useState({});
   const [dragOver, setDragOver] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [previewModal, setPreviewModal] = useState({
     open: false,
     src: null,
     title: null,
   });
+
+  // Load data dari backend saat component mount
+  useEffect(() => {
+    loadMasjid();
+  }, []);
+
+  const loadMasjid = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await axiosInstance.get("/masjid/takmir");
+      console.log("Response data:", response.data);
+
+      if (response.data.statusCode != 200) {
+        throw new Error(response.data.message || "Gagal memuat data masjid");
+      }
+
+      const data = response.data.data;
+      setMasjidData(data);
+      console.log("Masjid data loaded:", data);
+    } catch (err) {
+      console.error("Error loading facilities:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileUpload = (category, index, file) => {
     if (file) {
@@ -88,41 +124,90 @@ const DokumenMasjidPage = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const PhotoUploadCard = ({ label, category, index, required = false }) => {
+  // import {
+  //   Camera,
+  //   Upload,
+  //   X,
+  //   CheckCircle,
+  //   FileText,
+  //   Eye,
+  //   Pencil,
+  // } from "lucide-react";
+
+  const PhotoUploadCard = ({
+    label,
+    category,
+    index,
+    required = false,
+    previewUrl,
+  }) => {
     const key = `${category}-${index}`;
     const uploadedFile = uploadedFiles[key];
     const isDragOver = dragOver === key;
+
+    const fileToShow =
+      uploadedFile ||
+      (previewUrl
+        ? {
+            name: label,
+            size: 0,
+            preview: previewUrl,
+            fromServer: true,
+          }
+        : null);
+
+    const handleReplaceClick = () => {
+      document.getElementById(`file-input-${key}`)?.click();
+    };
 
     return (
       <div className="relative group">
         <div
           className={`
-            relative border-2 border-dashed rounded-xl p-4 transition-all duration-200
-            ${
-              isDragOver
-                ? "border-blue-500 bg-blue-50"
-                : uploadedFile
-                ? "border-green-400 bg-green-50"
-                : "border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50"
-            }
-          `}
+          relative border-2 border-dashed rounded-xl p-4 transition-all duration-200
+          ${
+            isDragOver
+              ? "border-blue-500 bg-blue-50"
+              : fileToShow
+              ? "border-green-400 bg-green-50"
+              : "border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50"
+          }
+        `}
           onDragOver={(e) => handleDragOver(e, category, index)}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, category, index)}
         >
-          {uploadedFile ? (
+          {fileToShow ? (
             <div className="space-y-3">
-              {uploadedFile.preview ? (
-                <div className="relative">
+              {fileToShow.preview ? (
+                <div className="relative group">
                   <img
-                    src={uploadedFile.preview}
+                    src={fileToShow.preview}
                     alt={label}
                     className="w-full h-32 object-cover rounded-lg cursor-pointer"
-                    onClick={() => openPreview(uploadedFile.preview, label)}
+                    onClick={() => openPreview(fileToShow.preview, label)}
                   />
-                  <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center opacity-0 hover:opacity-100">
+                  <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <Eye className="w-6 h-6 text-white" />
                   </div>
+                  {/* 👇 Replace/Edit Button */}
+                  <button
+                    type="button"
+                    onClick={handleReplaceClick}
+                    className="absolute top-2 right-2 bg-white shadow px-2 py-1 rounded text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-1"
+                  >
+                    <Pencil className="w-3 h-3" />
+                    Ganti
+                  </button>
+                  <input
+                    id={`file-input-${key}`}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) =>
+                      handleFileUpload(category, index, e.target.files[0])
+                    }
+                  />
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-32 bg-gray-100 rounded-lg">
@@ -132,23 +217,27 @@ const DokumenMasjidPage = () => {
 
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-900 truncate">
-                  {uploadedFile.name}
+                  {fileToShow.name}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {formatFileSize(uploadedFile.size)}
+                  {fileToShow.size
+                    ? formatFileSize(fileToShow.size)
+                    : "Dari Server"}
                 </p>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1 text-green-600">
                     <CheckCircle className="w-4 h-4" />
-                    <span className="text-xs">Berhasil diunggah</span>
+                    <span className="text-xs">Siap diunggah</span>
                   </div>
-                  <button
-                    onClick={() => removeFile(key)}
-                    className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  {!fileToShow.fromServer && (
+                    <button
+                      onClick={() => removeFile(key)}
+                      className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -177,6 +266,7 @@ const DokumenMasjidPage = () => {
                 <Upload className="w-4 h-4" />
                 Pilih File
                 <input
+                  id={`file-input-${key}`}
                   type="file"
                   accept="image/*"
                   className="hidden"
@@ -284,22 +374,98 @@ const DokumenMasjidPage = () => {
     );
   };
 
-  const handleSubmit = () => {
-    // Check required files
-    const requiredFiles = [
-      "dokumen-0", // Surat Izin Mendirikan Masjid
-      "dokumen-2", // Surat Pengantar RT/RW/Kelurahan
-    ];
+  const handleSubmit = async () => {
+    try {
+      setIsLoading(true);
 
-    const missingFiles = requiredFiles.filter((key) => !uploadedFiles[key]);
+      // Check required files
+      const requiredFiles = [
+        "dokumen-0", // Surat Izin Mendirikan Masjid
+        "dokumen-2", // Surat Pengantar RT/RW/Kelurahan
+      ];
 
-    if (missingFiles.length > 0) {
-      alert("Mohon lengkapi semua dokumen yang wajib diunggah");
-      return;
+      const missingFiles = requiredFiles.filter((key) => !uploadedFiles[key]);
+
+      if (missingFiles.length > 0) {
+        alert("Mohon lengkapi semua dokumen yang wajib diunggah");
+        return;
+      }
+
+      // Prepare FormData
+      const formData = new FormData();
+
+      // Add photo files
+      const fotoLuarFiles = [];
+      const fotoDalamFiles = [];
+
+      // Collect exterior photos (FotoLuarMasjid)
+      for (let i = 0; i < 4; i++) {
+        const key = `exterior-${i}`;
+        if (uploadedFiles[key]) {
+          fotoLuarFiles.push(uploadedFiles[key].file);
+        }
+      }
+
+      // Collect interior photos (FotoDalamMasjid)
+      for (let i = 0; i < 4; i++) {
+        const key = `interior-${i}`;
+        if (uploadedFiles[key]) {
+          fotoDalamFiles.push(uploadedFiles[key].file);
+        }
+      }
+
+      // Append photos to FormData
+      fotoLuarFiles.forEach((file, index) => {
+        formData.append("FotoLuarMasjid", file);
+      });
+
+      fotoDalamFiles.forEach((file, index) => {
+        formData.append("FotoDalamMasjid", file);
+      });
+
+      // Add document files
+      const documentMapping = {
+        "dokumen-0": "SuratIzinMasjid",
+        "dokumen-1": "PenghargaanMasjid",
+        "dokumen-2": "SuratPengantar",
+      };
+
+      Object.entries(documentMapping).forEach(([key, fieldName]) => {
+        if (uploadedFiles[key]) {
+          formData.append(fieldName, uploadedFiles[key].file);
+        }
+      });
+
+      // Get auth token (adjust based on your auth implementation)
+      const token = localStorage.getItem("authToken") || "your-jwt-token";
+
+      // Send request to backend
+      const response = await axiosInstance.patch("masjid", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.data.statusCode != 200) {
+        // const errorData = await response.json();
+        throw new Error(response.data.message || "Gagal mengunggah dokumen");
+      }
+
+      // const result = await response.json();
+
+      // Show success message
+      toast.success("Dokumen berhasil disimpan!");
+
+      // Optional: Reset form or redirect
+      // setUploadedFiles({});
+
+      // console.log("Upload result:", result);
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
-
-    console.log("Submitting files:", uploadedFiles);
-    alert("Dokumen berhasil disimpan!");
   };
 
   return (
@@ -367,6 +533,7 @@ const DokumenMasjidPage = () => {
                     category="exterior"
                     index={idx}
                     required={idx === 0}
+                    previewUrl={masjidData?.FotoLuarMasjid?.[idx] || null} // 👈 backend image preview URL
                   />
                 ))}
               </div>
@@ -389,16 +556,20 @@ const DokumenMasjidPage = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {["Tambahkan Foto","Tambahkan Foto","Tambahkan Foto","Tambahkan Foto"].map(
-                  (label, idx) => (
-                    <PhotoUploadCard
-                      key={idx}
-                      label={label}
-                      category="interior"
-                      index={idx}
-                    />
-                  )
-                )}
+                {[
+                  "Tambahkan Foto",
+                  "Tambahkan Foto",
+                  "Tambahkan Foto",
+                  "Tambahkan Foto",
+                ].map((label, idx) => (
+                  <PhotoUploadCard
+                    key={idx}
+                    label={label}
+                    category="interior"
+                    index={idx}
+                    previewUrl={masjidData?.FotoDalamMasjid?.[idx] || null} //
+                  />
+                ))}
               </div>
             </div>
 
@@ -441,10 +612,20 @@ const DokumenMasjidPage = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-end">
               <button
                 onClick={handleSubmit}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+                disabled={isLoading}
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Save className="w-5 h-5" />
-                Simpan Semua Dokumen
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Mengunggah...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    Simpan Semua Dokumen
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -154,19 +154,39 @@ const AuthPage = () => {
     setLoading(true);
 
     try {
-      const res = await axiosInstance.post("/auth/login", {
-        email: form.email,
-        password: form.password,
-      });
+      if (isLogin) {
+        // Login
+        const res = await axiosInstance.post("/auth/login", {
+          email: form.email,
+          password: form.password,
+        });
 
-      const token = res.data.data.token;
-      localStorage.setItem("accessToken", token);
-      localStorage.setItem("user", JSON.stringify(res.data.data.user));
+        const token = res.data.data.token;
+        localStorage.setItem("accessToken", token);
+        localStorage.setItem("user", JSON.stringify(res.data.data.user));
 
-      toast.success("Authenticated! Redirecting...");
-      navigate("/home");
+        toast.success("Authenticated! Redirecting...");
+        navigate("/home");
+      } else {
+        // Register
+        const res = await axiosInstance.post("/auth/register", {
+          username: form.name,
+          email: form.email,
+          password: form.password,
+          confirmPassword: form.confirmPassword,
+        });
+
+        toast.success("Registration successful! Please log in.");
+        setIsLogin(true);
+        setForm({
+          name: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+        });
+      }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Login failed.");
+      toast.error(err.response?.data?.message || (isLogin ? "Login failed." : "Registration failed."));
     } finally {
       setLoading(false);
     }

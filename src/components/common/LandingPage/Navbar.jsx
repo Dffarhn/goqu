@@ -96,12 +96,12 @@ const Navbar = ({ position = "fixed", user = null }) => {
                 <>
                   <NavLink 
                     text="Dashboard" 
-                    onClick={() => navigate("/dashboard")}
+                    onClick={() => navigate("/home")}
                     icon="🏠"
                   />
                   <NavLink 
                     text="Riwayat Donasi" 
-                    onClick={() => navigate("/donations")}
+                    onClick={() => navigate("/riwayat")}
                     icon="📋"
                   />
                   
@@ -239,8 +239,8 @@ const Navbar = ({ position = "fixed", user = null }) => {
             <div className="md:hidden border-t border-white/20 py-4 animate-slideDown backdrop-blur-xl">
               {user ? (
                 <div className="space-y-2">
-                  <MobileNavLink text="🏠 Dashboard" onClick={() => navigate("/dashboard")} />
-                  <MobileNavLink text="📋 Riwayat Donasi" onClick={() => navigate("/donations")} />
+                  <MobileNavLink text="🏠 Dashboard" onClick={() => navigate("/home")} />
+                  <MobileNavLink text="📋 Riwayat Donasi" onClick={() => navigate("/riwayat")} />
                   
                   {/* Enhanced Mobile User Info */}
                   <div className="mx-4 my-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">

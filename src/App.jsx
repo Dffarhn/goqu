@@ -17,6 +17,7 @@ import KegiatanMasjidPage from "./pages/takmir/kelola_masjid_page/kegiatan_masji
 import NotFoundPage from "./pages/user/404_pages";
 import CheckoutDonation from "./pages/user/donation_checkout_page/donation_checkout";
 import AddDonationTakmirPage from "./pages/takmir/add_donation_page/add_donation";
+import RiwayatDonasiPage from "./pages/user/riwayat_donasi_page/riwayat_donasi";
 
 function App() {
   return (
@@ -25,9 +26,13 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/admin" element={<AdminAuthPage />} />
+        <Route path="/riwayat" element={<RiwayatDonasiPage />} />
         <Route path="/home" element={<HomeUser />} />
         <Route path="/home/donation/:id" element={<DetailDonation />} />
-        <Route path="/home/donation/:id/checkout" element={<CheckoutDonation />} />
+        <Route
+          path="/home/donation/:id/checkout"
+          element={<CheckoutDonation />}
+        />
         <Route path="/admin/dashboard" element={<DashboardTakmir />} />
         <Route path="/admin/donation" element={<DonationTakmir />} />
         <Route path="/admin/add/donation" element={<AddDonationTakmirPage />} />
