@@ -1,9 +1,16 @@
 import dayjs from "dayjs";
-import "dayjs/locale/id"; // import locale Indonesia
-dayjs.locale("id"); // set ke bahasa Indonesia
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import "dayjs/locale/id";
+
+dayjs.locale("id");
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const formatDateWIB = (isoDate) => {
-  return dayjs(isoDate).add(7, "hour").format("DD MMMM YYYY, HH:mm") + " WIB";
+  return (
+    dayjs.utc(isoDate).tz("Asia/Jakarta").format("DD MMMM YYYY, HH:mm") + " WIB"
+  );
 };
 
 export default formatDateWIB;
