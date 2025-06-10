@@ -24,7 +24,7 @@ const MetaData = () => {
       <meta property="twitter:image" content="/og-image.jpg" />
       
       {/* Favicon */}
-      <link rel="icon" href="/favicon.ico" />
+      <link rel="icon" href="/logo.ico" />
       <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       
       {/* Theme color */}

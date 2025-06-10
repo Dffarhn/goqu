@@ -21,37 +21,6 @@ const TopCurve = () => (
   </svg>
 );
 
-// --- CONTOH DATA UNTUK KARTU PROGRESS ---
-// const progressData = [
-//   {
-//     image: "/Masjid2.jpg",
-//     title: "Pembelian Semen & Batako",
-//     description:
-//       "Dana awal digunakan untuk membeli 100 sak semen dan 5000 batako.",
-//     amount: 2300000,
-//   },
-//   {
-//     image:
-//       "https://images.unsplash.com/photo-1593349389423-74cec4e3a979?q=80&w=2070",
-//     title: "Pembayaran Tukang Tahap 1",
-//     description: "Membayar jasa tukang dan kuli untuk pekerjaan fondasi awal.",
-//     amount: 5500000,
-//   },
-//   {
-//     image:
-//       "https://images.unsplash.com/photo-1517983692621-14251acf32fe?q=80&w=2070",
-//     title: "Pembelian Besi & Kerangka",
-//     description: "Membeli besi beton dan material untuk kerangka atap teras.",
-//     amount: 4750000,
-//   },
-//   {
-//     image:
-//       "https://images.unsplash.com/photo-1600585152220-406b9b71a25d?q=80&w=2070",
-//     title: "Sewa Peralatan Konstruksi",
-//     description: "Biaya sewa molen semen dan alat pertukangan lainnya.",
-//     amount: 850000,
-//   },
-// ];
 
 function DetailDonation() {
   const { id } = useParams(); // get the id from route param
@@ -182,7 +151,10 @@ function DetailDonation() {
                   </p>
                 </div>
                 <div className="flex gap-4 w-full justify-center pt-4">
-                  <button className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-6 py-3 rounded-lg shadow-lg transition duration-300 transform hover:scale-105">
+                  <button className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-6 py-3 rounded-lg shadow-lg transition duration-300 transform hover:scale-105"
+                  
+                    onClick={() => navigate(`/masjid/${donation.masjid.id}`)} // Navigate to detail page
+                  >
                     Lihat Detail Masjid
                   </button>
                   <button

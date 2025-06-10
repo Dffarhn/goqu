@@ -1,11 +1,14 @@
+import { useParams, useSearchParams } from "react-router-dom";
 import MosqueCardSection from "../../../components/common/Home/MosqueCardSection";
-import CallToAction from "../../../components/common/LandingPage/CallToAction";
 import Footer from "../../../components/common/LandingPage/Footer";
 import Hero from "../../../components/common/LandingPage/Hero";
 import Navbar from "../../../components/common/LandingPage/Navbar";
 import MetaData from "../../../components/common/MetaData";
 
-function HomeUser() {
+function AllDonationUser() {
+  const [searchParams] = useSearchParams();
+  const title = searchParams.get("search") || "";
+
   return (
     <>
       <MetaData />
@@ -15,18 +18,15 @@ function HomeUser() {
           name: JSON.parse(localStorage.getItem("user"))?.NamaLengkap || "User",
           email: JSON.parse(localStorage.getItem("user"))?.Email,
           role: "Donatur",
-          avatar: "https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg",
+          avatar:
+            "https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg",
         }}
       />
-      <Hero isHome={true} />
-      <MosqueCardSection />
+      <MosqueCardSection title={title} limit={20} seeMore={false} />
 
-      <MosqueCardSection title="Masjid Disekitar Kamu" seeMoreUrl="/donation?search=Masjid Disekitar Kamu"/>
-
-      <CallToAction login={true} />
       <Footer />
     </>
   );
 }
 
-export default HomeUser;
+export default AllDonationUser;

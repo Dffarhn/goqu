@@ -1,7 +1,9 @@
 import React from "react";
 import ImageCarousel from "./ImageCarousel";
+import { useNavigate } from "react-router-dom";
 
 const Hero = ({ isHome = false }) => {
+  const navigate = useNavigate();
   return (
     <section
       className="w-full min-h-[calc(100vh-72px)] flex flex-col md:flex-row items-center justify-between px-6 md:px-16 lg:px-24 py-20 md:py-16 relative overflow-hidden"
@@ -113,6 +115,18 @@ const Hero = ({ isHome = false }) => {
               <button
                 className="bg-yellow-400 hover:bg-yellow-500 text-white px-8 py-4 rounded-r-xl font-bold transition duration-300 flex items-center text-lg shadow-lg"
                 style={{ backgroundColor: "#0473A8" }}
+                onClick={() => {
+                  const searchValue = document.getElementById("search").value;
+                  if (searchValue) {
+                    navigate(
+                      `/donation?search=${encodeURIComponent(searchValue)}`
+                    );
+                  } else {
+                    alert(
+                      "Silakan masukkan nama atau lokasi masjid yang ingin dicari."
+                    );
+                  }
+                }}
               >
                 Cari
                 <svg

@@ -30,10 +30,12 @@ const dummyMosques = [
   },
 ];
 
-const MosqueCardSection = ({
+const   MosqueCardSection = ({
   title = "Masjid Membutuhkan Kamu Segera",
-  seeMoreUrl = "/donasi",
+  seeMore = true,
+  seeMoreUrl = "/donation?search=Masjid Membutuhkan Kamu Segera",
   position = "px-6 md:px-20 mt-12",
+  limit = 3,
 }) => {
   const [donationCampaigns, setDonationCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,7 @@ const MosqueCardSection = ({
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
-        const res = await axiosInstance.get("/donasi-masjid?limit=3");
+        const res = await axiosInstance.get("/donasi-masjid?limit=" + limit);
         setDonationCampaigns(res.data.data); // sesuaikan struktur response lo
         console.log("Fetched donation campaigns:", res.data.data);
       } catch (error) {
@@ -63,7 +65,30 @@ const MosqueCardSection = ({
         <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
           {title}
         </h2>
-        <button
+
+        {seeMore && (
+          <button
+            onClick={() => navigate(seeMoreUrl)}
+            className="bg-[#0473A8] hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm flex items-center transition"
+          >
+            Lihat Lebih banyak
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 ml-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
+              />
+            </svg>
+          </button>
+        )}
+        {/* <button
           onClick={() => navigate(seeMoreUrl)}
           className="bg-[#0473A8] hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm flex items-center transition"
         >
@@ -82,7 +107,7 @@ const MosqueCardSection = ({
               d="M13 7l5 5m0 0l-5 5m5-5H6"
             />
           </svg>
-        </button>
+        </button> */}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
