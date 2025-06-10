@@ -131,6 +131,16 @@ const KelolaIdentitasMasjidPage = () => {
       if (response.data.statusCode != 200) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      // This is not correct syntax. To store the masjid name in localStorage, use:
+      // Get the existing data
+      const existingData = JSON.parse(localStorage.getItem("masjid") || "{}");
+
+      // Update just the Nama property
+      existingData.Nama = updatedData.Nama;
+
+      // Save the updated object back to localStorage
+      localStorage.setItem("masjid", JSON.stringify(existingData));
       // You might want to show a success message here
       toast.success("Data berhasil disimpan!");
     } catch (err) {
