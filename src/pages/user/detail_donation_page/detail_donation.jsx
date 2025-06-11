@@ -21,7 +21,6 @@ const TopCurve = () => (
   </svg>
 );
 
-
 function DetailDonation() {
   const { id } = useParams(); // get the id from route param
   const [donation, setDonation] = useState(null);
@@ -49,13 +48,18 @@ function DetailDonation() {
 
   const currentDonation = donation.UangDonasiTerkumpul;
   const targetDonation = donation.TargetUangDonasi;
+  const usedDonation = donation.UangPengeluaran || 0;
+  const remainingDonation = currentDonation - usedDonation;
   const progress = (currentDonation / targetDonation) * 100;
+  const usageProgress = currentDonation > 0 ? (usedDonation / currentDonation) * 100 : 0;
+  
   const progressData = donation.pengeluaran_donasi_masjid.map((item) => ({
     image: item.FotoPengeluaran,
     title: item.TujuanPengeluaran,
     description: item.DeskripsiPengeluaran,
     amount: item.UangPengeluaran,
   }));
+
   return (
     <>
       <MetaData />
@@ -166,6 +170,95 @@ function DetailDonation() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* === Summary Section: Dana Terkumpul === */}
+        <section className="bg-gray-50 border-b border-gray-200">
+          <div className="container mx-auto px-6 py-16">
+            <h2 className="text-3xl text-left font-bold text-gray-900  mb-12">
+              Ringkasan Dana
+            </h2>
+            
+            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {/* Total Dana Terkumpul */}
+              <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-l-4 border-blue-500">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Total Dana Terkumpul
+                </h3>
+                <p className="text-3xl font-bold text-blue-600 mb-2">
+                  {formatCurrency(currentDonation)}
+                </p>
+                <p className="text-sm text-gray-600">
+                  dari target {formatCurrency(targetDonation)}
+                </p>
+              </div>
+
+              {/* Dana Telah Digunakan */}
+              <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-l-4 border-red-500">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Dana Telah Digunakan
+                </h3>
+                <p className="text-3xl font-bold text-red-600 mb-2">
+                  {formatCurrency(usedDonation)}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {usageProgress.toFixed(1)}% dari dana terkumpul
+                </p>
+              </div>
+
+              {/* Dana Tersisa */}
+              <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-l-4 border-green-500">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Dana Tersisa
+                </h3>
+                <p className="text-3xl font-bold text-green-600 mb-2">
+                  {formatCurrency(remainingDonation)}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {(100 - usageProgress).toFixed(1)}% dari dana terkumpul
+                </p>
+              </div>
+            </div>
+
+            {/* Progress Bar Penggunaan Dana */}
+            {/* <div className="max-w-3xl mx-auto mt-12">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-sm font-medium text-gray-700">Penggunaan Dana</span>
+                <span className="text-sm font-medium text-gray-700">{usageProgress.toFixed(1)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-red-500 to-red-600 h-full rounded-full transition-all duration-1000 flex items-center justify-end pr-2"
+                  style={{ width: `${usageProgress}%` }}
+                >
+                  {usageProgress > 10 && (
+                    <span className="text-white text-xs font-medium">
+                      {formatCurrency(usedDonation)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-between text-sm text-gray-600 mt-2">
+                <span>Dana Digunakan</span>
+                <span>Dana Tersisa: {formatCurrency(remainingDonation)}</span>
+              </div>
+            </div> */}
           </div>
         </section>
 
