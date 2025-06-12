@@ -358,95 +358,183 @@ const DonationExpenses = ({ expenses }) => {
   );
 };
 
-const LaporanKeuangan = () => {
-  // Data laporan yang sudah diupload oleh admin
-  const laporanList = [
+const LaporanKeuangan = ({ dataLaporanMasjid = [] }) => {
+  const JENIS_LAPORAN_ENUM = {
+    POSISI_KEUANGAN: "POSISI_KEUANGAN",
+    PENGHASILAN_KOMPREHENSIF: "PENGHASILAN_KOMP",
+    PERUBAHAN_ASET_NETO: "PERUBAHAN_ASET_NETO",
+    ARUS_KAS: "ARUS_KAS",
+    CATATAN_LAPORAN_KEUANGAN: "CATATAN",
+  };
+
+  // Static template data with jenis mapping
+  const laporanTemplates = [
     {
-      id: 1,
+      jenis: "POSISI_KEUANGAN",
+      jenisEnum: JENIS_LAPORAN_ENUM.POSISI_KEUANGAN,
       title: "Laporan Atas Posisi Keuangan",
       subtitle: "Donasi Siap Pakai",
       description:
         "Ringkasan komprehensif posisi keuangan organisasi per periode",
       icon: Building2,
       color: "from-blue-500 to-blue-600",
-      status: "Tersedia",
-      lastUpdate: "25 Mei 2025",
-      size: "2.4 MB",
-      uploadedBy: "Admin Keuangan",
-      period: "Q1 2025",
+      templateSize: "156 KB",
     },
     {
-      id: 2,
+      jenis: "PENGHASILAN_KOMP",
+      jenisEnum: JENIS_LAPORAN_ENUM.PENGHASILAN_KOMPREHENSIF,
       title: "Laporan Penghasilan Komprehensif",
       subtitle: "Donasi Siap Pakai",
       description:
-        "Analisis detail pendapatan dan beban operasional periode berjalan",
+        "Analisis detail pendapatan dan beban operasional",
       icon: TrendingUp,
       color: "from-emerald-500 to-emerald-600",
-      status: "Tersedia",
-      lastUpdate: "25 Mei 2025",
-      size: "1.8 MB",
-      uploadedBy: "Admin Keuangan",
-      period: "Q1 2025",
+      templateSize: "142 KB",
     },
     {
-      id: 3,
+      jenis: "PERUBAHAN_ASET_NETO",
+      jenisEnum: JENIS_LAPORAN_ENUM.PERUBAHAN_ASET_NETO,
       title: "Laporan Perubahan Aset Neto",
       subtitle: "Donasi Siap Pakai",
       description: "Tracking perubahan aset bersih dan equity organisasi",
       icon: FileText,
       color: "from-purple-500 to-purple-600",
-      status: "Tersedia",
-      lastUpdate: "24 Mei 2025",
-      size: "1.2 MB",
-      uploadedBy: "Admin Keuangan",
-      period: "Q1 2025",
+      templateSize: "128 KB",
     },
     {
-      id: 4,
+      jenis: "ARUS_KAS",
+      jenisEnum: JENIS_LAPORAN_ENUM.ARUS_KAS,
       title: "Laporan Arus Kas",
       subtitle: "Donasi Siap Pakai",
       description:
         "Monitoring aliran kas masuk dan keluar dalam periode pelaporan",
       icon: TrendingUp,
       color: "from-orange-500 to-orange-600",
-      status: "Tersedia",
-      lastUpdate: "24 Mei 2025",
-      size: "1.6 MB",
-      uploadedBy: "Admin Keuangan",
-      period: "Q1 2025",
+      templateSize: "134 KB",
     },
     {
-      id: 5,
+      jenis: "CATATAN",
+      jenisEnum: JENIS_LAPORAN_ENUM.CATATAN_LAPORAN_KEUANGAN,
       title: "Catatan atas Laporan Keuangan",
       subtitle: "Donasi Siap Pakai",
       description: "Penjelasan detail dan metodologi laporan keuangan",
       icon: FileText,
       color: "from-indigo-500 to-indigo-600",
-      status: "Tersedia",
-      lastUpdate: "23 Mei 2025",
-      size: "3.1 MB",
-      uploadedBy: "Admin Keuangan",
-      period: "Q1 2025",
+      templateSize: "178 KB",
     },
   ];
 
+  // Process data - merge template with API data (hanya yang ada di API)
+  const laporanList = dataLaporanMasjid
+    .map((laporanAPI) => {
+      const template = laporanTemplates.find(
+        (t) => t.jenis === laporanAPI.jenis
+      );
+
+      if (!template) {
+        console.warn(`Template not found for jenis: ${laporanAPI.jenis}`);
+        return null;
+      }
+
+      return {
+        ...template,
+        // API data
+        id: laporanAPI.id,
+        fileUrl: laporanAPI.fileUrl,
+        uploadedAt: laporanAPI.uploadedAt,
+        fileSizeKB: laporanAPI.fileSizeKB,
+
+        // Computed fields untuk display
+        status: "Tersedia",
+        period: new Date(laporanAPI.uploadedAt).toLocaleDateString("id-ID", {
+          month: "short",
+          year: "numeric",
+        }),
+        lastUpdate: new Date(laporanAPI.uploadedAt).toLocaleDateString(
+          "id-ID",
+          {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }
+        ),
+        size: `${laporanAPI.fileSizeKB} KB`,
+        uploadedBy: "Takmir Masjid", // atau bisa dari API jika ada
+      };
+    })
+    .filter(Boolean); // Remove null entries
+
   // Handler untuk melihat laporan
-  const handleViewReport = (laporanId) => {
-    // Logika untuk membuka/preview laporan
-    console.log(`Membuka laporan dengan ID: ${laporanId}`);
-    // Implementasi bisa berupa modal preview, redirect ke halaman detail, atau download
+  const handleViewReport = (laporan) => {
+    if (laporan.fileUrl) {
+      // Buka file di tab baru untuk preview
+      window.open(laporan.fileUrl, "_blank");
+      console.log(`Membuka laporan: ${laporan.title}`);
+    } else {
+      console.error("File URL tidak tersedia");
+    }
   };
 
   // Handler untuk download laporan
-  const handleDownloadReport = (laporanId, title) => {
-    // Logika untuk download laporan
-    console.log(`Mengunduh laporan: ${title} (ID: ${laporanId})`);
-    // Implementasi download file dari server
+  const handleDownloadReport = (laporan) => {
+    if (laporan.fileUrl) {
+      // Method 1: Direct download dengan fetch
+      fetch(laporan.fileUrl)
+        .then((response) => {
+          if (!response.ok) throw new Error("Network response was not ok");
+          return response.blob();
+        })
+        .then((blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `${laporan.title}.xlsx`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        })
+        .catch((error) => {
+          console.error("Download error:", error);
+          // Fallback: buka di tab baru
+          window.open(laporan.fileUrl, "_blank");
+        });
+
+      console.log(`Mengunduh laporan: ${laporan.title}`);
+    } else {
+      console.error("File URL tidak tersedia");
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* Header Section */}
+      <div className="text-center space-y-2">
+        <h2 className="text-2xl font-bold text-gray-900">
+          Laporan Keuangan Masjid
+        </h2>
+        <p className="text-gray-600">
+          Laporan keuangan resmi yang telah dipublikasikan
+        </p>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/50 p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <FileText className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Laporan</p>
+              <p className="text-xl font-bold text-gray-900">
+                {laporanList.length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Reports Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {laporanList.map((laporan) => {
@@ -510,16 +598,14 @@ const LaporanKeuangan = () => {
                 {/* Actions - User dapat melihat dan download */}
                 <div className="flex gap-2 pt-2">
                   <button
-                    onClick={() => handleViewReport(laporan.id)}
+                    onClick={() => handleViewReport(laporan)}
                     className="flex-1 py-2 px-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white text-sm font-semibold rounded-xl hover:from-teal-600 hover:to-teal-700 transition-all duration-300 flex items-center justify-center gap-2"
                   >
                     <Eye className="w-4 h-4" />
                     Lihat Laporan
                   </button>
                   <button
-                    onClick={() =>
-                      handleDownloadReport(laporan.id, laporan.title)
-                    }
+                    onClick={() => handleDownloadReport(laporan)}
                     className="py-2 px-4 bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-200 transition-all duration-300 flex items-center justify-center group"
                     title="Download Laporan"
                   >
@@ -549,7 +635,6 @@ const LaporanKeuangan = () => {
     </div>
   );
 };
-
 function DetailMasjid() {
   const { id } = useParams();
   const [masjidData, setMasjidData] = useState(null);
@@ -790,7 +875,9 @@ function DetailMasjid() {
                       Laporan Keuangan
                     </h3>
                     <div className="space-y-4">
-                      <LaporanKeuangan />
+                      <LaporanKeuangan
+                        dataLaporanMasjid={masjidData.laporanMasjid}
+                      />
                     </div>
                   </div>
                 )}
