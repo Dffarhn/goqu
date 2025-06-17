@@ -365,6 +365,8 @@ const LaporanKeuangan = ({ dataLaporanMasjid = [] }) => {
     PERUBAHAN_ASET_NETO: "PERUBAHAN_ASET_NETO",
     ARUS_KAS: "ARUS_KAS",
     CATATAN_LAPORAN_KEUANGAN: "CATATAN",
+    LAPORAN_KEUANGAN_BULANAN: "KEUANGAN_BULANAN",
+    LAPORAN_KEUANGAN_TAHUNAN: "KEUANGAN_TAHUNAN",
   };
 
   // Static template data with jenis mapping
@@ -386,7 +388,7 @@ const LaporanKeuangan = ({ dataLaporanMasjid = [] }) => {
       title: "Laporan Penghasilan Komprehensif",
       subtitle: "Donasi Siap Pakai",
       description:
-        "Analisis detail pendapatan dan beban operasional",
+        "Analisis detail pendapatan dan beban operasional periode berjalan",
       icon: TrendingUp,
       color: "from-emerald-500 to-emerald-600",
       templateSize: "142 KB",
@@ -416,6 +418,26 @@ const LaporanKeuangan = ({ dataLaporanMasjid = [] }) => {
       jenis: "CATATAN",
       jenisEnum: JENIS_LAPORAN_ENUM.CATATAN_LAPORAN_KEUANGAN,
       title: "Catatan atas Laporan Keuangan",
+      subtitle: "Donasi Siap Pakai",
+      description: "Penjelasan detail dan metodologi laporan keuangan",
+      icon: FileText,
+      color: "from-indigo-500 to-indigo-600",
+      templateSize: "178 KB",
+    },
+    {
+      jenis: "KEUANGAN_BULANAN",
+      jenisEnum: JENIS_LAPORAN_ENUM.LAPORAN_KEUANGAN_BULANAN,
+      title: "Laporan Keuangan Bulanan",
+      subtitle: "Donasi Siap Pakai",
+      description: "Penjelasan detail dan metodologi laporan keuangan",
+      icon: FileText,
+      color: "from-indigo-500 to-indigo-600",
+      templateSize: "178 KB",
+    },
+    {
+      jenis: "KEUANGAN_TAHUNAN",
+      jenisEnum: JENIS_LAPORAN_ENUM.LAPORAN_KEUANGAN_TAHUNAN,
+      title: "Laporan Keuangan Tahunan",
       subtitle: "Donasi Siap Pakai",
       description: "Penjelasan detail dan metodologi laporan keuangan",
       icon: FileText,

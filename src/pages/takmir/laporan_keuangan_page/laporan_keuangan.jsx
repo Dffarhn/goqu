@@ -22,6 +22,8 @@ const JENIS_LAPORAN_ENUM = {
   PERUBAHAN_ASET_NETO: "PERUBAHAN_ASET_NETO",
   ARUS_KAS: "ARUS_KAS",
   CATATAN_LAPORAN_KEUANGAN: "CATATAN",
+  LAPORAN_KEUANGAN_BULANAN:"KEUANGAN_BULANAN",
+  LAPORAN_KEUANGAN_TAHUNAN:"KEUANGAN_TAHUNAN"
 };
 
 // Static template data with jenis mapping
@@ -73,6 +75,26 @@ const laporanTemplates = [
     jenis: "CATATAN",
     jenisEnum: JENIS_LAPORAN_ENUM.CATATAN_LAPORAN_KEUANGAN,
     title: "Catatan atas Laporan Keuangan",
+    subtitle: "Donasi Siap Pakai",
+    description: "Penjelasan detail dan metodologi laporan keuangan",
+    icon: FileText,
+    color: "from-indigo-500 to-indigo-600",
+    templateSize: "178 KB",
+  },
+  {
+    jenis: "KEUANGAN_BULANAN",
+    jenisEnum: JENIS_LAPORAN_ENUM.LAPORAN_KEUANGAN_BULANAN,
+    title: "Laporan Keuangan Bulanan",
+    subtitle: "Donasi Siap Pakai",
+    description: "Penjelasan detail dan metodologi laporan keuangan",
+    icon: FileText,
+    color: "from-indigo-500 to-indigo-600",
+    templateSize: "178 KB",
+  },
+  {
+    jenis: "KEUANGAN_TAHUNAN",
+    jenisEnum: JENIS_LAPORAN_ENUM.LAPORAN_KEUANGAN_TAHUNAN,
+    title: "Laporan Keuangan Tahunan",
     subtitle: "Donasi Siap Pakai",
     description: "Penjelasan detail dan metodologi laporan keuangan",
     icon: FileText,
@@ -146,6 +168,8 @@ const LaporanKeuanganPage = () => {
       PERUBAHAN_ASET_NETO: "Template_Laporan_Keuangan_Perubahan_Aset_Neto.xlsx",
       ARUS_KAS: "Template_Laporan_Keuangan_Arus_Kas.xlsx",
       CATATAN: "template-catatan-laporan-keuangan.xlsx",
+      KEUANGAN_BULANAN: "Template_Keuangan_Bulanan.xlsx",
+      KEUANGAN_TAHUNAN: "Template_Keuangan_Tahunan.xlsx",
     };
 
     const fileName = templateFiles[laporan.jenis];
