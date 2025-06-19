@@ -14,12 +14,16 @@ import {
   ArrowUpRight,
   Filter,
   Search,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Banknote,
 } from "lucide-react";
 import DonationCard from "./DonationCardTakmir";
 import DonaturTableTakmir from "./DonaturTableTakmir";
 import formatCurrency from "../../../utils/formatCurrency";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../../api/axiosInstance";
+import StatCard from "./StatCards";
 
 const Dashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("week");
@@ -29,6 +33,51 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
+
+  const [stats, setStats] = useState({
+    cashIn: { total: 0 },
+    cashOut: { total: 0 },
+    transactions: { total: 0 },
+  });
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const raw = localStorage.getItem("masjid");
+        if (!raw) {
+          console.warn("No masjid data found in localStorage");
+          return;
+        }
+
+        const masjid = JSON.parse(raw);
+        const masjidId = masjid?.id;
+        if (!masjidId) {
+          console.warn("masjid.id not found");
+          return;
+        }
+
+        const res = await axiosInstance.get(`/statistik/${masjidId}`);
+        const data = res.data.data;
+
+        setStats({
+          cashIn: {
+            total: data.cashIn.total,
+          },
+          cashOut: {
+            total: data.cashOut.total,
+          },
+          transactions: {
+            total: data.transactions.total,
+          },
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -128,6 +177,29 @@ const Dashboard = () => {
             Export
           </button>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard
+          title="Arus Kas Masuk"
+          count={formatCurrency(stats.cashIn.total)}
+          icon={ArrowDownCircle}
+          color="bg-green-500"
+        />
+
+        <StatCard
+          title="Arus Kas Keluar"
+          count={formatCurrency(stats.cashOut.total)}
+          icon={ArrowUpCircle}
+          color="bg-red-500"
+        />
+
+        <StatCard
+          title="Total Transaksi"
+          count={stats.transactions.total}
+          icon={Banknote}
+          color="bg-yellow-500"
+        />
       </div>
 
       {/* Donation Campaigns */}

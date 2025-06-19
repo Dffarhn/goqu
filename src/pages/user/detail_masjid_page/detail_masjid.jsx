@@ -7,6 +7,9 @@ import { useEffect, useState } from "react";
 import axiosInstance from "../../../api/axiosInstance";
 import formatCurrency from "../../../utils/formatCurrency";
 import {
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Banknote,
   Building2,
   Calendar,
   Download,
@@ -15,6 +18,7 @@ import {
   TrendingUp,
   User,
 } from "lucide-react";
+import StatCard from "../../../components/common/Dashboard_Takmir/StatCards";
 
 // SVG component for the decorative curve
 const TopCurve = () => (
@@ -663,6 +667,38 @@ function DetailMasjid() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
 
+  const [stats, setStats] = useState({
+    cashIn: { total: 0 },
+    cashOut: { total: 0 },
+    transactions: { total: 0 },
+  });
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await axiosInstance.get(`/statistik/${id}`);
+        const data = res.data.data;
+
+        setStats({
+          cashIn: {
+            total: data.cashIn.total,
+          },
+          cashOut: {
+            total: data.cashOut.total,
+          },
+          transactions: {
+            total: data.transactions.total,
+          },
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -788,6 +824,28 @@ function DetailMasjid() {
         {/* Content Section */}
         <section className="bg-gray-50 py-16">
           <div className="container mx-auto px-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <StatCard
+                title="Arus Kas Masuk"
+                count={formatCurrency(stats.cashIn.total)}
+                icon={ArrowDownCircle}
+                color="bg-green-500"
+              />
+
+              <StatCard
+                title="Arus Kas Keluar"
+                count={formatCurrency(stats.cashOut.total)}
+                icon={ArrowUpCircle}
+                color="bg-red-500"
+              />
+
+              <StatCard
+                title="Total Transaksi"
+                count={stats.transactions.total}
+                icon={Banknote}
+                color="bg-yellow-500"
+              />
+            </div>
             {/* Tab Navigation */}
             <div className="bg-white rounded-xl shadow-lg mb-8">
               <div className="flex flex-wrap border-b border-gray-200">
