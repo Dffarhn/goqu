@@ -10,6 +10,11 @@ import {
   Settings,
   AlertTriangle,
   CheckCircle,
+  User,
+  Building,
+  MapPin,
+  Phone,
+  UserPlus,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -107,7 +112,7 @@ const AdminSuccessAlert = ({ message }) => {
 };
 
 // Admin Submit Button Component
-const AdminSubmitButton = ({ loading = false, onClick }) => {
+const AdminSubmitButton = ({ loading = false, onClick, isLogin = true }) => {
   return (
     <button
       type="button"
@@ -137,12 +142,21 @@ const AdminSubmitButton = ({ loading = false, onClick }) => {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             ></path>
           </svg>
-          Authenticating...
+          {isLogin ? "Authenticating..." : "Creating Account..."}
         </div>
       ) : (
         <>
-          <Shield className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-white" />
-          Access Admin Panel
+          {isLogin ? (
+            <>
+              <Shield className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-white" />
+              Access Admin Panel
+            </>
+          ) : (
+            <>
+              <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-white" />
+              Register Takmir Account
+            </>
+          )}
         </>
       )}
     </button>
@@ -150,19 +164,25 @@ const AdminSubmitButton = ({ loading = false, onClick }) => {
 };
 
 // Admin Header Component
-const AdminAuthHeader = () => {
+const AdminAuthHeader = ({ isLogin = true }) => {
   return (
     <div className="text-center mb-6 sm:mb-8">
       <div className="flex justify-center mb-4 sm:mb-6">
         <div className="p-3 sm:p-4 bg-[#0C6839] rounded-xl shadow-lg">
-          <Shield className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
+          {isLogin ? (
+            <Shield className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
+          ) : (
+            <UserPlus className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
+          )}
         </div>
       </div>
       <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
-        Admin Portal
+        {isLogin ? "Admin Portal" : "Takmir Registration"}
       </h1>
       <p className="text-gray-600 text-sm sm:text-lg px-4">
-        Mosque Donation Management System
+        {isLogin
+          ? "Mosque Donation Management System"
+          : "Create New Takmir Account"}
       </p>
       <div className="mt-3 sm:mt-4 h-1 w-16 sm:w-24 bg-[#0C6839] mx-auto rounded-full"></div>
     </div>
@@ -197,37 +217,70 @@ const AdminSecurityFeatures = () => {
   );
 };
 
+// Mode Toggle Component
+const ModeToggle = ({ isLogin, onToggle }) => {
+  return (
+    <div className="text-center mb-6">
+      <p className="text-sm text-gray-600 mb-3">
+        {isLogin ? "Don't have an account?" : "Already have an account?"}
+      </p>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="text-[#0C6839] hover:text-[#064f2d] font-semibold text-sm underline transition-colors duration-200"
+      >
+        {isLogin ? "Register as Takmir" : "Login to Admin Panel"}
+      </button>
+    </div>
+  );
+};
+
 // Main Admin Auth Component
 const AdminAuthPage = () => {
+  const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
+  const [loginForm, setLoginForm] = useState({
     email: "",
     password: "",
+  });
+  const [registerForm, setRegisterForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+    nama_masjid: "",
+    alamat: "",
+    nomor_telfon: "",
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleLoginChange = (e) => {
+    setLoginForm({ ...loginForm, [e.target.name]: e.target.value });
     if (error) setError("");
     if (success) setSuccess("");
   };
 
-  const validateForm = () => {
-    if (!form.email || !form.password) {
+  const handleRegisterChange = (e) => {
+    setRegisterForm({ ...registerForm, [e.target.name]: e.target.value });
+    if (error) setError("");
+    if (success) setSuccess("");
+  };
+
+  const validateLoginForm = () => {
+    if (!loginForm.email || !loginForm.password) {
       setError("Please enter both email and password.");
       return false;
     }
 
-    if (form.password.length < 8) {
+    if (loginForm.password.length < 8) {
       setError("Admin password must be at least 8 characters long.");
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) {
+    if (!emailRegex.test(loginForm.email)) {
       setError("Please enter a valid email address.");
       return false;
     }
@@ -235,15 +288,55 @@ const AdminAuthPage = () => {
     return true;
   };
 
-  const handleSubmit = async (e) => {
+  const validateRegisterForm = () => {
+    const { username, email, password, nama_masjid, alamat, nomor_telfon } =
+      registerForm;
+
+    if (
+      !username ||
+      !email ||
+      !password ||
+      !nama_masjid ||
+      !alamat ||
+      !nomor_telfon
+    ) {
+      setError("Please fill in all required fields.");
+      return false;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
+      return false;
+    }
+
+    if (username.length < 3) {
+      setError("Username must be at least 3 characters long.");
+      return false;
+    }
+
+    if (nama_masjid.length < 3) {
+      setError("Mosque name must be at least 3 characters long.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateLoginForm()) return;
     setLoading(true);
 
     try {
       const res = await axiosInstance.post("/auth/login", {
-        email: form.email,
-        password: form.password,
+        email: loginForm.email,
+        password: loginForm.password,
       });
 
       const token = res.data.data.token;
@@ -251,56 +344,191 @@ const AdminAuthPage = () => {
       localStorage.setItem("user", JSON.stringify(res.data.data.user));
       localStorage.setItem("masjid", JSON.stringify(res.data.data.user.masjid));
 
-
-
       toast.success("Authenticated! Redirecting...");
       navigate("/admin/dashboard");
     } catch (err) {
+      setError(err.response?.data?.message || "Login failed.");
       toast.error(err.response?.data?.message || "Login failed.");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    if (!validateRegisterForm()) return;
+    setLoading(true);
+
+    try {
+      const res = await axiosInstance.post("/auth/register/takmir", {
+        username: registerForm.username,
+        email: registerForm.email,
+        password: registerForm.password,
+        nama_masjid: registerForm.nama_masjid,
+        alamat: registerForm.alamat,
+        nomor_telfon: registerForm.nomor_telfon,
+      });
+
+      setSuccess(
+        "Registration successful! You can now login with your credentials."
+      );
+      toast.success("Registration successful! Please login.");
+
+      // Clear form and switch to login
+      setRegisterForm({
+        username: "",
+        email: "",
+        password: "",
+        nama_masjid: "",
+        alamat: "",
+        nomor_telfon: "",
+      });
+
+      // Switch to login mode after a short delay
+      setTimeout(() => {
+        setIsLogin(true);
+        setSuccess("");
+      }, 2000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Registration failed.");
+      toast.error(err.response?.data?.message || "Registration failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setError("");
+    setSuccess("");
+    setShowPassword(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e6f4ed] via-[#d1eadb] to-[#315a47] flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-sm sm:max-w-lg mx-auto">
         <div className="bg-[#f0f9f4] py-6 sm:py-10 px-4 sm:px-8 shadow-2xl rounded-xl sm:rounded-2xl border border-[#d0e6da] relative overflow-hidden">
-          {/* Decorative elements - smaller on mobile */}
+          {/* Decorative elements */}
           <div className="absolute top-0 right-0 -mt-2 sm:-mt-4 -mr-2 sm:-mr-4 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-[#0C6839] to-[#064f2d] rounded-full opacity-20"></div>
           <div className="absolute bottom-0 left-0 -mb-2 sm:-mb-4 -ml-2 sm:-ml-4 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-tr from-[#0C6839] to-[#064f2d] rounded-full opacity-20"></div>
 
           <div className="relative">
-            <AdminAuthHeader />
+            <AdminAuthHeader isLogin={isLogin} />
+
+            <ModeToggle isLogin={isLogin} onToggle={toggleMode} />
 
             <div className="space-y-4 sm:space-y-6">
-              <AdminInputField
-                label="Admin Email"
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                required
-                icon={Mail}
-              />
+              {isLogin ? (
+                // Login Form
+                <>
+                  <AdminInputField
+                    label="Admin Email"
+                    type="email"
+                    name="email"
+                    value={loginForm.email}
+                    onChange={handleLoginChange}
+                    required
+                    icon={Mail}
+                  />
 
-              <AdminInputField
-                label="Password"
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                required
-                icon={Lock}
-                showPasswordToggle
-                showPassword={showPassword}
-                onTogglePassword={() => setShowPassword(!showPassword)}
-              />
+                  <AdminInputField
+                    label="Password"
+                    type="password"
+                    name="password"
+                    value={loginForm.password}
+                    onChange={handleLoginChange}
+                    required
+                    icon={Lock}
+                    showPasswordToggle
+                    showPassword={showPassword}
+                    onTogglePassword={() => setShowPassword(!showPassword)}
+                  />
 
-              <AdminErrorAlert message={error} />
-              <AdminSuccessAlert message={success} />
+                  <AdminErrorAlert message={error} />
+                  <AdminSuccessAlert message={success} />
 
-              <AdminSubmitButton loading={loading} onClick={handleSubmit} />
+                  <AdminSubmitButton
+                    loading={loading}
+                    onClick={handleLogin}
+                    isLogin={true}
+                  />
+                </>
+              ) : (
+                // Register Form
+                <>
+                  <AdminInputField
+                    label="Full Name"
+                    type="text"
+                    name="username"
+                    value={registerForm.username}
+                    onChange={handleRegisterChange}
+                    required
+                    icon={User}
+                  />
+
+                  <AdminInputField
+                    label="Email Address"
+                    type="email"
+                    name="email"
+                    value={registerForm.email}
+                    onChange={handleRegisterChange}
+                    required
+                    icon={Mail}
+                  />
+
+                  <AdminInputField
+                    label="Password"
+                    type="password"
+                    name="password"
+                    value={registerForm.password}
+                    onChange={handleRegisterChange}
+                    required
+                    icon={Lock}
+                    showPasswordToggle
+                    showPassword={showPassword}
+                    onTogglePassword={() => setShowPassword(!showPassword)}
+                  />
+
+                  <AdminInputField
+                    label="Mosque Name"
+                    type="text"
+                    name="nama_masjid"
+                    value={registerForm.nama_masjid}
+                    onChange={handleRegisterChange}
+                    required
+                    icon={Building}
+                  />
+
+                  <AdminInputField
+                    label="Address"
+                    type="text"
+                    name="alamat"
+                    value={registerForm.alamat}
+                    onChange={handleRegisterChange}
+                    required
+                    icon={MapPin}
+                  />
+
+                  <AdminInputField
+                    label="Phone Number"
+                    type="tel"
+                    name="nomor_telfon"
+                    value={registerForm.nomor_telfon}
+                    onChange={handleRegisterChange}
+                    required
+                    icon={Phone}
+                  />
+
+                  <AdminErrorAlert message={error} />
+                  <AdminSuccessAlert message={success} />
+
+                  <AdminSubmitButton
+                    loading={loading}
+                    onClick={handleRegister}
+                    isLogin={false}
+                  />
+                </>
+              )}
             </div>
 
             <AdminSecurityFeatures />
@@ -308,10 +536,12 @@ const AdminAuthPage = () => {
         </div>
       </div>
 
-      {/* Footer - responsive text sizes */}
+      {/* Footer */}
       <div className="mt-6 sm:mt-8 text-center px-4">
         <p className="text-xs sm:text-xs text-[#0C6839] mb-1 sm:mb-2">
-          Admin Portal - Authorized Personnel Only
+          {isLogin
+            ? "Admin Portal - Authorized Personnel Only"
+            : "Takmir Registration - Create Your Account"}
         </p>
         <p className="text-xs text-gray-400">
           All activities are monitored and logged for security purposes
