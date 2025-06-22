@@ -5,7 +5,6 @@ import { Plus, Download, Calendar, PlusIcon } from "lucide-react"; // or replace
 import axiosInstance from "../../../api/axiosInstance";
 import { useNavigate } from "react-router-dom";
 
-
 const DonationTakmir = () => {
   const [donationCampaigns, setDonationCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,13 +50,14 @@ const DonationTakmir = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            
-              onClick={() => navigate("/admin/add/donation")} // <-- navigate to add donation page
+            <button
+              className="flex items-center gap-2 px-4 py-2 bg-white text-green-600 border border-green-600 rounded-lg hover:bg-green-50 transition-colors"
+              onClick={() => navigate("/admin/add/donation")}
             >
               <PlusIcon className="w-4 h-4" />
               Tambah Donasi
             </button>
+
             <button className="flex items-center gap-2 px-4 py-2 bg-white text-green-600 border border-green-600 rounded-lg hover:bg-green-50 transition-colors">
               <Download className="w-4 h-4" />
               Export
