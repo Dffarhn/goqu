@@ -37,6 +37,16 @@ const navItems = [
     to: "/admin/laporan",
   },
   {
+    label: "Sistem Jurnal",
+    icon: <FileText className="w-5 h-5" />,
+    to: "/admin/jurnal",
+    children: [
+      { label: "Chart of Accounts", to: "/admin/coa" },
+      { label: "Input Jurnal", to: "/admin/jurnal" },
+      { label: "Laporan dari Jurnal", to: "/admin/laporan-jurnal" },
+    ],
+  },
+  {
     label: "Kelola Masjid",
     icon: <Settings className="w-5 h-5" />,
     to: "/admin/masjid",

@@ -7,7 +7,7 @@ const StatCard = ({ title, count, icon: Icon, color }) => (
     </div>
     <div>
       <h3 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-1">
-        {count.toLocaleString()}
+        {count !== null && count !== undefined ? count.toLocaleString() : "0"}
       </h3>
       <p className="text-sm text-gray-500 font-medium">{title}</p>
     </div>

@@ -20,6 +20,11 @@ import AddDonationTakmirPage from "./pages/takmir/add_donation_page/add_donation
 import RiwayatDonasiPage from "./pages/user/riwayat_donasi_page/riwayat_donasi";
 import AllDonationUser from "./pages/user/all_donation_page/all_donation";
 import DetailMasjid from "./pages/user/detail_masjid_page/detail_masjid";
+import COAPage from "./pages/takmir/coa_page/coa";
+import JurnalPage from "./pages/takmir/jurnal_page/jurnal";
+import JurnalFormPage from "./pages/takmir/jurnal_page/jurnal_form_page";
+import LaporanKeuanganJurnalPage from "./pages/takmir/laporan_keuangan_jurnal_page/laporan_keuangan_jurnal";
+import LaporanKeuanganUserPage from "./pages/user/laporan_keuangan_page/laporan_keuangan";
 
 function App() {
   return (
@@ -31,6 +36,7 @@ function App() {
         <Route path="/riwayat" element={<RiwayatDonasiPage />} />
         <Route path="/home" element={<HomeUser />} />
         <Route path="/masjid/:id" element={<DetailMasjid />} />
+        <Route path="/masjid/:id/laporan-keuangan" element={<LaporanKeuanganUserPage />} />
         <Route path="/donation" element={<AllDonationUser />} />
         <Route path="/home/donation/:id" element={<DetailDonation />} />
         <Route
@@ -43,6 +49,11 @@ function App() {
         <Route path="/admin/donation/:id" element={<DonationDetailTakmir />} />
         <Route path="/admin/donatur" element={<DonaturTakmir />} />
         <Route path="/admin/laporan" element={<LaporanKeuanganPage />} />
+        <Route path="/admin/coa" element={<COAPage />} />
+        <Route path="/admin/jurnal" element={<JurnalPage />} />
+        <Route path="/admin/jurnal/tambah" element={<JurnalFormPage />} />
+        <Route path="/admin/jurnal/edit/:id" element={<JurnalFormPage />} />
+        <Route path="/admin/laporan-jurnal" element={<LaporanKeuanganJurnalPage />} />
         <Route
           path="/admin/masjid/identitas"
           element={<KelolaIdentitasMasjidPage />}
