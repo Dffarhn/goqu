@@ -96,3 +96,25 @@ export function createJurnalEntry(akunId, jumlah, coaList, overrideTipe = null) 
   };
 }
 
+/**
+ * Filter accounts untuk mendapatkan hanya detail accounts (leaf) yang aktif
+ * Digunakan untuk dropdown/form selection
+ * @param {Array} accounts - Array of accounts
+ * @returns {Array} Array of detail accounts (isGroup: false, isActive: true)
+ */
+export const getDetailAccounts = (accounts = []) => {
+  return accounts.filter(
+    (acc) => !acc.isGroup && acc.isActive
+  );
+};
+
+/**
+ * Filter accounts untuk mendapatkan hanya group accounts
+ * Digunakan untuk parent selection saat create COA
+ * @param {Array} accounts - Array of accounts
+ * @returns {Array} Array of group accounts (isGroup: true)
+ */
+export const getGroupAccounts = (accounts = []) => {
+  return accounts.filter((acc) => acc.isGroup === true);
+};
+

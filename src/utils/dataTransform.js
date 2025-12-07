@@ -26,6 +26,9 @@ export const transformAccount = (account) => {
     tipeAkun: typeMap[account.type] || account.type, // Frontend format (ASET, KEWAJIBAN, dll)
     type: account.type, // Backend format (ASSET, LIABILITY, dll) - untuk normal balance
     normalBalance: account.normalBalance || null, // Normal balance (DEBIT/KREDIT)
+    restriction: account.restriction || null, // TANPA_PEMBATASAN atau DENGAN_PEMBATASAN
+    report: account.report || null, // NERACA atau LAPORAN_PENGHASILAN_KOMPREHENSIF
+    category: account.category || null, // Kategori akun
     kategori: kategori,
     isGroup: account.isGroup,
     pathCode: account.pathCode,

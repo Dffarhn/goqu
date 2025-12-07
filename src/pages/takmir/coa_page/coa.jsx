@@ -3,11 +3,13 @@ import TakmirLayout from "../../../layouts/takmir_layout";
 import COATable from "../../../components/common/COATable";
 import { getAllAccounts, createAccount, updateAccount, deleteAccount, getNextAccountCode } from "../../../services/coaService";
 import { transformAccounts, transformAccount, transformAccountForBackend } from "../../../utils/dataTransform";
+import { getDetailAccounts, getGroupAccounts } from "../../../utils/accountUtils";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 
 const COAPage = () => {
-  const [coaList, setCoaList] = useState([]);
+  const [coaList, setCoaList] = useState([]); // Hanya detail accounts untuk tampilan table
+  const [allAccounts, setAllAccounts] = useState([]); // Semua accounts untuk form modal
   const [showForm, setShowForm] = useState(false);
   const [editingCOA, setEditingCOA] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,13 @@ const COAPage = () => {
       setLoading(true);
       const accounts = await getAllAccounts({ includeInactive: false });
       const transformedAccounts = transformAccounts(accounts);
-      setCoaList(transformedAccounts);
+      
+      // Simpan semua accounts untuk form modal
+      setAllAccounts(transformedAccounts);
+      
+      // Filter hanya detail accounts untuk tampilan table
+      const detailAccounts = getDetailAccounts(transformedAccounts);
+      setCoaList(detailAccounts);
     } catch (error) {
       console.error("Error loading accounts:", error);
       toast.error(
@@ -137,7 +145,7 @@ const COAPage = () => {
         {showForm && (
           <COAFormModal
             coa={editingCOA}
-            coaList={coaList}
+            coaList={allAccounts}
             onSave={handleSave}
             onCancel={handleCancel}
           />
@@ -165,8 +173,8 @@ const COAFormModal = ({ coa, coaList, onSave, onCancel }) => {
   // Load parent options (hanya group accounts) saat form dibuka untuk create baru
   useEffect(() => {
     if (!coa) {
-      // Filter hanya group accounts (isGroup: true)
-      const groups = coaList.filter((acc) => acc.isGroup === true);
+      // Filter hanya group accounts menggunakan helper function
+      const groups = getGroupAccounts(coaList);
       setParentOptions(groups);
     }
   }, [coa, coaList]);

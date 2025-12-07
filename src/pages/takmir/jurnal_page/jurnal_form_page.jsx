@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TakmirLayout from "../../../layouts/takmir_layout";
 import { getAllAccounts } from "../../../services/coaService";
@@ -10,6 +10,14 @@ import {
 import { transformAccounts, transformJurnal, transformJurnalForBackend } from "../../../utils/dataTransform";
 import { getNormalBalance, isNormalBalance, getNormalBalanceLabel } from "../../../utils/accountUtils";
 import formatCurrency from "../../../utils/formatCurrency";
+import {
+  buildEntriesFromTransactionType,
+  getAsetKasBank,
+  getPendapatanAccounts,
+  getBebanAccounts,
+  getHutangAccounts,
+  getPiutangAccounts,
+} from "../../../utils/jurnalUtils";
 import toast from "react-hot-toast";
 import SearchableSelect from "../../../components/common/SearchableSelect";
 import {
@@ -28,13 +36,20 @@ const JurnalFormPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = !!id;
-  const draftKey = `jurnal_draft_${isEditMode ? "edit" : "create"}_${id || "new"}`;
   
   const [coaList, setCoaList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
+  const [transactionType, setTransactionType] = useState("PEMASUKAN");
+  const [templateForm, setTemplateForm] = useState({
+    akunSatuId: "",
+    akunDuaId: "",
+    nominal: "",
+    keterangan: "",
+    hasRestriction: false,
+  });
   const [entries, setEntries] = useState([
     {
       id: Date.now(),
@@ -46,29 +61,11 @@ const JurnalFormPage = () => {
     },
   ]);
   const [errors, setErrors] = useState({});
-  const autoSaveTimeoutRef = useRef(null);
 
   // Load data
   useEffect(() => {
     loadData();
   }, [id]);
-
-  // Auto-save draft
-  useEffect(() => {
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      saveDraft();
-    }, 2000);
-
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, [entries, tanggal]);
 
   const loadData = async () => {
     try {
@@ -82,7 +79,7 @@ const JurnalFormPage = () => {
       );
       setCoaList(detailAccounts);
 
-      // Load draft or existing jurnal transaction
+      // Load existing jurnal transaction untuk edit mode
       if (isEditMode) {
         const transaction = await getJurnalById(id);
         const transformedTransaction = transformJurnal(transaction);
@@ -97,23 +94,6 @@ const JurnalFormPage = () => {
             keterangan: entry.keterangan || "",
           }))
         );
-        // Clear draft for edit mode
-        localStorage.removeItem(draftKey);
-      } else {
-        // Load draft if exists
-        const draft = localStorage.getItem(draftKey);
-        if (draft) {
-          try {
-            const draftData = JSON.parse(draft);
-            if (draftData.tanggal) setTanggal(draftData.tanggal);
-            if (draftData.entries && draftData.entries.length > 0) {
-              setEntries(draftData.entries);
-              toast.success("Draft tersimpan dimuat", { icon: "💾" });
-            }
-          } catch (e) {
-            console.error("Error loading draft:", e);
-          }
-        }
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -123,23 +103,39 @@ const JurnalFormPage = () => {
     }
   };
 
-  const saveDraft = () => {
-    try {
-      const draftData = {
-        tanggal,
-        entries: entries,
-        savedAt: new Date().toISOString(),
+  const updateTemplateForm = (field, value) => {
+    setTemplateForm((prev) => {
+      const updated = {
+        ...prev,
+        [field]: value,
       };
-      localStorage.setItem(draftKey, JSON.stringify(draftData));
-    } catch (e) {
-      console.error("Error saving draft:", e);
+      
+      // Jika akun dipilih, auto-set hasRestriction berdasarkan restriction akun
+      if (field === "akunSatuId" && value) {
+        const selectedAkun = coaList.find((coa) => coa.id === value);
+        if (selectedAkun && selectedAkun.restriction === "DENGAN_PEMBATASAN") {
+          updated.hasRestriction = true;
+        }
+      }
+      if (field === "akunDuaId" && value) {
+        const selectedAkun = coaList.find((coa) => coa.id === value);
+        if (selectedAkun && selectedAkun.restriction === "DENGAN_PEMBATASAN") {
+          updated.hasRestriction = true;
+        }
+      }
+      
+      return updated;
+    });
+    
+    // Clear field-level error jika ada
+    if (errors[field]) {
+      setErrors({
+        ...errors,
+        [field]: undefined,
+      });
     }
   };
 
-  const clearDraft = () => {
-    localStorage.removeItem(draftKey);
-    toast.success("Draft dihapus");
-  };
 
   const addEntry = () => {
     setEntries([
@@ -176,6 +172,13 @@ const JurnalFormPage = () => {
               // Gunakan normalBalance langsung dari account jika ada, baru fallback ke getNormalBalance
               const normalBalance = getNormalBalance(selectedAkun);
               updatedEntry.tipe = normalBalance;
+              
+              // Auto-set hasRestriction berdasarkan restriction dari akun
+              if (selectedAkun.restriction === "DENGAN_PEMBATASAN") {
+                updatedEntry.hasRestriction = true;
+              } else {
+                updatedEntry.hasRestriction = false;
+              }
             }
           }
           
@@ -243,17 +246,125 @@ const JurnalFormPage = () => {
     return isValid;
   };
 
+  const validateTemplateTransaction = () => {
+    const newErrors = {};
+    let isValid = true;
+
+    if (!tanggal) {
+      newErrors.tanggal = "Tanggal harus diisi";
+      isValid = false;
+    }
+
+    if (!transactionType) {
+      newErrors.transactionType = "Jenis transaksi harus dipilih";
+      isValid = false;
+    }
+
+    if (!templateForm.akunSatuId) {
+      newErrors.akunSatuId = "Akun pertama harus dipilih";
+      isValid = false;
+    }
+
+    if (!templateForm.akunDuaId) {
+      newErrors.akunDuaId = "Akun kedua harus dipilih";
+      isValid = false;
+    }
+
+    if (!templateForm.nominal || parseFloat(templateForm.nominal) <= 0) {
+      newErrors.nominal = "Nominal harus lebih dari 0";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
   const handlePreview = () => {
-    if (validateEntries()) {
-      setShowPreview(true);
-    } else {
+    if (isEditMode) {
+      if (validateEntries()) {
+        setShowPreview(true);
+      } else {
+        toast.error("Mohon lengkapi semua field yang wajib diisi");
+      }
+      return;
+    }
+
+    // Mode template (tambah jurnal baru dengan 6 jenis transaksi)
+    if (!validateTemplateTransaction()) {
+      setShowPreview(false);
       toast.error("Mohon lengkapi semua field yang wajib diisi");
+      return;
+    }
+
+    try {
+      const builtEntries = buildEntriesFromTransactionType(transactionType, {
+        akunSatuId: templateForm.akunSatuId,
+        akunDuaId: templateForm.akunDuaId,
+        nominal: templateForm.nominal,
+        keterangan: templateForm.keterangan,
+        hasRestriction: templateForm.hasRestriction,
+        coaList,
+      });
+
+      setEntries(
+        builtEntries.map((entry) => ({
+          id: Date.now() + Math.random(),
+          ...entry,
+        }))
+      );
+      setShowPreview(true);
+    } catch (error) {
+      console.error("Error building entries from template:", error);
+      toast.error(error.message || "Gagal menyiapkan preview jurnal");
     }
   };
 
   const handleSave = async () => {
-    // Validasi hanya field wajib
-    if (!validateEntries()) {
+    if (isEditMode) {
+      // Validasi hanya field wajib (mode edit lama)
+      if (!validateEntries()) {
+        setShowPreview(false);
+        toast.error("Mohon lengkapi semua field yang wajib diisi");
+        return;
+      }
+
+      try {
+        setSaving(true);
+
+        const transactionData = {
+          tanggal,
+          keterangan: "", // Keterangan sekarang di level entry
+          entries: entries.map((entry) => ({
+            akunId: entry.akunId,
+            tipe: entry.tipe,
+            jumlah: parseFloat(entry.jumlah),
+            hasRestriction: entry.hasRestriction || false,
+            keterangan: entry.keterangan || "",
+          })),
+        };
+
+        const backendData = transformJurnalForBackend(transactionData);
+
+        await updateJurnal(id, backendData);
+        toast.success("Transaksi jurnal berhasil diupdate");
+
+        // Navigate back
+        navigate("/admin/jurnal");
+      } catch (error) {
+        console.error("Error saving jurnal transaction:", error);
+        toast.error(
+          error.response?.data?.message || "Gagal menyimpan transaksi jurnal"
+        );
+      } finally {
+        setSaving(false);
+        setShowPreview(false);
+      }
+
+      return;
+    }
+
+    // Mode template (transaksi baru 6 jenis)
+    if (!validateTemplateTransaction()) {
       setShowPreview(false);
       toast.error("Mohon lengkapi semua field yang wajib diisi");
       return;
@@ -262,36 +373,35 @@ const JurnalFormPage = () => {
     try {
       setSaving(true);
 
+      const builtEntries = buildEntriesFromTransactionType(transactionType, {
+        akunSatuId: templateForm.akunSatuId,
+        akunDuaId: templateForm.akunDuaId,
+        nominal: templateForm.nominal,
+        keterangan: templateForm.keterangan,
+        hasRestriction: templateForm.hasRestriction,
+        coaList,
+      });
+
       const transactionData = {
         tanggal,
-        keterangan: "", // Keterangan sekarang di level entry
-        entries: entries.map((entry) => ({
-          akunId: entry.akunId,
-          tipe: entry.tipe,
-          jumlah: parseFloat(entry.jumlah),
-          hasRestriction: entry.hasRestriction || false,
-          keterangan: entry.keterangan || "",
-        })),
+        keterangan: templateForm.keterangan || "",
+        entries: builtEntries,
       };
 
       const backendData = transformJurnalForBackend(transactionData);
 
-      if (isEditMode) {
-        await updateJurnal(id, backendData);
-        toast.success("Transaksi jurnal berhasil diupdate");
-      } else {
-        await createJurnal(backendData);
-        toast.success("Transaksi jurnal berhasil ditambahkan");
-      }
-
-      // Clear draft
-      localStorage.removeItem(draftKey);
+      await createJurnal(backendData);
+      toast.success("Transaksi jurnal berhasil ditambahkan");
 
       // Navigate back
       navigate("/admin/jurnal");
     } catch (error) {
       console.error("Error saving jurnal transaction:", error);
-      toast.error(error.response?.data?.message || "Gagal menyimpan transaksi jurnal");
+      toast.error(
+        error.message ||
+          error.response?.data?.message ||
+          "Gagal menyimpan transaksi jurnal"
+      );
     } finally {
       setSaving(false);
       setShowPreview(false);
@@ -320,6 +430,116 @@ const JurnalFormPage = () => {
 
   const activeCOA = coaList.filter((coa) => coa.isActive);
 
+  // Filter COA berdasarkan restriction jika hasRestriction dicentang
+  // Menggunakan useCallback untuk memastikan re-compute ketika templateForm.hasRestriction berubah
+  const filterByRestriction = useCallback((accounts, hasRestriction) => {
+    if (hasRestriction) {
+      // Jika hasRestriction dicentang, hanya tampilkan akun dengan DENGAN_PEMBATASAN
+      return accounts.filter(
+        (acc) => acc.restriction === "DENGAN_PEMBATASAN"
+      );
+    } else {
+      // Jika hasRestriction tidak dicentang, hanya tampilkan akun dengan TANPA_PEMBATASAN
+      return accounts.filter(
+        (acc) => acc.restriction === "TANPA_PEMBATASAN"
+      );
+    }
+  }, []);
+
+  const asetKasBankAccounts = useMemo(
+    () => filterByRestriction(getAsetKasBank(activeCOA), templateForm.hasRestriction),
+    [activeCOA, templateForm.hasRestriction, filterByRestriction]
+  );
+  const pendapatanAccounts = useMemo(
+    () => filterByRestriction(getPendapatanAccounts(activeCOA), templateForm.hasRestriction),
+    [activeCOA, templateForm.hasRestriction, filterByRestriction]
+  );
+  const bebanAccounts = useMemo(
+    () => filterByRestriction(getBebanAccounts(activeCOA), templateForm.hasRestriction),
+    [activeCOA, templateForm.hasRestriction, filterByRestriction]
+  );
+  const hutangAccounts = useMemo(
+    () => filterByRestriction(getHutangAccounts(activeCOA), templateForm.hasRestriction),
+    [activeCOA, templateForm.hasRestriction, filterByRestriction]
+  );
+  const piutangAccounts = useMemo(
+    () => filterByRestriction(getPiutangAccounts(activeCOA), templateForm.hasRestriction),
+    [activeCOA, templateForm.hasRestriction, filterByRestriction]
+  );
+  const filteredActiveCOA = useMemo(
+    () => filterByRestriction(activeCOA, templateForm.hasRestriction),
+    [activeCOA, templateForm.hasRestriction, filterByRestriction]
+  );
+
+  const getTemplateConfig = () => {
+    switch (transactionType) {
+      case "PEMASUKAN":
+        return {
+          title: "Pemasukan",
+          description:
+            "Catat pendapatan/infaq/donasi/uang masuk lain. Sistem akan membuat jurnal: DEBIT Kas/Bank, KREDIT Pendapatan.",
+          akunSatuLabel: "Diterima dari (Akun Pendapatan)",
+          akunDuaLabel: "Simpan ke (Kas/Bank)",
+          akunSatuOptions: pendapatanAccounts,
+          akunDuaOptions: asetKasBankAccounts,
+        };
+      case "PENGELUARAN":
+        return {
+          title: "Pengeluaran",
+          description:
+            "Catat beban/biaya/penyaluran dana. Sistem akan membuat jurnal: DEBIT Beban, KREDIT Kas/Bank.",
+          akunSatuLabel: "Dikeluarkan dari (Kas/Bank)",
+          akunDuaLabel: "Dipakai untuk (Akun Beban)",
+          akunSatuOptions: asetKasBankAccounts,
+          akunDuaOptions: bebanAccounts,
+        };
+      case "HUTANG":
+        return {
+          title: "Hutang",
+          description:
+            "Catat penerimaan barang/jasa yang belum dibayar. Sistem akan membuat jurnal: DEBIT Beban/Aset, KREDIT Hutang.",
+          akunSatuLabel: "Diterima dari (Akun Hutang)",
+          akunDuaLabel: "Simpan ke (Beban atau Aset)",
+          akunSatuOptions: hutangAccounts,
+          akunDuaOptions: filteredActiveCOA,
+        };
+      case "BAYAR_HUTANG":
+        return {
+          title: "Bayar Hutang",
+          description:
+            "Catat pembayaran hutang yang sudah tercatat. Sistem akan membuat jurnal: DEBIT Hutang, KREDIT Kas/Bank.",
+          akunSatuLabel: "Dibayar dari (Kas/Bank)",
+          akunDuaLabel: "Bayar hutang (Akun Hutang)",
+          akunSatuOptions: asetKasBankAccounts,
+          akunDuaOptions: hutangAccounts,
+        };
+      case "PIUTANG":
+        return {
+          title: "Piutang",
+          description:
+            "Catat jasa/fasilitas yang belum dibayar jamaah. Sistem akan membuat jurnal: DEBIT Piutang, KREDIT Pendapatan.",
+          akunSatuLabel: "Diterima dari (Akun Pendapatan)",
+          akunDuaLabel: "Simpan ke (Akun Piutang)",
+          akunSatuOptions: pendapatanAccounts,
+          akunDuaOptions: piutangAccounts,
+        };
+      case "DIBAYAR_PIUTANG":
+        return {
+          title: "Dibayar Piutang",
+          description:
+            "Catat penerimaan pelunasan piutang. Sistem akan membuat jurnal: DEBIT Kas/Bank, KREDIT Piutang.",
+          akunSatuLabel: "Diterima dari (Akun Piutang)",
+          akunDuaLabel: "Simpan ke (Kas/Bank)",
+          akunSatuOptions: piutangAccounts,
+          akunDuaOptions: asetKasBankAccounts,
+        };
+      default:
+        return null;
+    }
+  };
+
+  const templateConfig = !isEditMode ? getTemplateConfig() : null;
+
   if (loading) {
     return (
       <TakmirLayout>
@@ -345,7 +565,7 @@ const JurnalFormPage = () => {
             </button>
             <div>
               <h1 className="text-3xl font-bold text-gray-800">
-                {isEditMode ? "Edit Jurnal" : "Tambah Jurnal"}
+                {isEditMode ? "Edit Jurnal" : "Input Jurnal"}
               </h1>
               <p className="text-gray-600 mt-1">
                 {isEditMode
@@ -355,14 +575,6 @@ const JurnalFormPage = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            {!isEditMode && (
-              <button
-                onClick={clearDraft}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-              >
-                Hapus Draft
-              </button>
-            )}
             <button
               onClick={handlePreview}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -373,20 +585,28 @@ const JurnalFormPage = () => {
           </div>
         </div>
 
-        {/* Transaction Level Fields */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Informasi Transaksi</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Step 1: Informasi Dasar */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
+              1
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">
+              Informasi Dasar Transaksi
+            </h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Tanggal */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tanggal <span className="text-red-500">*</span>
+                Tanggal Transaksi <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
                 value={tanggal}
                 onChange={(e) => setTanggal(e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white ${
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white ${
                   errors.tanggal ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -394,33 +614,278 @@ const JurnalFormPage = () => {
                 <p className="mt-1 text-sm text-red-600">{errors.tanggal}</p>
               )}
             </div>
-          </div>
-        </div>
 
-        {/* Form Entries */}
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800">Entries Jurnal</h3>
-          </div>
-          {entries.map((entry, index) => (
-            <div
-              key={entry.id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Entry #{index + 1}
-                </h3>
-                {entries.length > 1 && (
-                  <button
-                    onClick={() => removeEntry(entry.id)}
-                    className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
-                    title="Hapus Entry"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+            {/* Jenis Transaksi - hanya untuk mode tambah (template) */}
+            {!isEditMode && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Jenis Transaksi <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={transactionType}
+                  onChange={(e) => setTransactionType(e.target.value)}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white ${
+                    errors.transactionType
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  }`}
+                >
+                  <option value="PEMASUKAN">Pemasukan</option>
+                  <option value="PENGELUARAN">Pengeluaran</option>
+                  <option value="HUTANG">Hutang</option>
+                  <option value="BAYAR_HUTANG">Bayar Hutang</option>
+                  <option value="PIUTANG">Piutang</option>
+                  <option value="DIBAYAR_PIUTANG">Dibayar Piutang</option>
+                </select>
+                {errors.transactionType && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.transactionType}
+                  </p>
                 )}
               </div>
+            )}
+          </div>
+
+          {/* Info Box untuk Jenis Transaksi */}
+          {!isEditMode && templateConfig && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 mb-1">
+                    {templateConfig.title}
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    {templateConfig.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Step 2: Detail Transaksi - hanya untuk mode template */}
+        {!isEditMode && templateConfig && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
+                2
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800">
+                Detail Transaksi
+              </h3>
+            </div>
+
+            {/* Pembatasan - di atas sebelum memilih akun */}
+            <div className="mb-6">
+              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={templateForm.hasRestriction}
+                    onChange={(e) =>
+                      updateTemplateForm("hasRestriction", e.target.checked)
+                    }
+                    className="w-5 h-5 mt-0.5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium text-gray-800">
+                        Dengan Pembatasan dari Pemberi Sumber Daya
+                      </span>
+                      {templateForm.hasRestriction && (
+                        <span className="px-2 py-0.5 text-xs font-semibold text-orange-700 bg-orange-200 rounded">
+                          Aktif
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      Centang jika dana ini memiliki pembatasan penggunaan. 
+                      Akun yang ditampilkan akan difilter berdasarkan pilihan ini.
+                      (contoh: shodaqoh untuk pembangunan WC)
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Akun pertama */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {templateConfig.akunSatuLabel}{" "}
+                  <span className="text-red-500">*</span>
+                </label>
+                <SearchableSelect
+                  options={templateConfig.akunSatuOptions}
+                  value={templateForm.akunSatuId}
+                  onChange={(value) =>
+                    updateTemplateForm("akunSatuId", value)
+                  }
+                  placeholder="Pilih akun"
+                  searchPlaceholder="Cari akun (kode, nama, atau tipe)..."
+                  getOptionLabel={(coa) =>
+                    `${coa.kodeAkun} - ${coa.namaAkun} (${coa.tipeAkun})`
+                  }
+                  getOptionValue={(coa) => coa.id}
+                  error={!!errors.akunSatuId}
+                />
+                {errors.akunSatuId && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.akunSatuId}
+                  </p>
+                )}
+              </div>
+
+              {/* Akun kedua */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {templateConfig.akunDuaLabel}{" "}
+                  <span className="text-red-500">*</span>
+                </label>
+                <SearchableSelect
+                  options={templateConfig.akunDuaOptions}
+                  value={templateForm.akunDuaId}
+                  onChange={(value) => updateTemplateForm("akunDuaId", value)}
+                  placeholder="Pilih akun"
+                  searchPlaceholder="Cari akun (kode, nama, atau tipe)..."
+                  getOptionLabel={(coa) =>
+                    `${coa.kodeAkun} - ${coa.namaAkun} (${coa.tipeAkun})`
+                  }
+                  getOptionValue={(coa) => coa.id}
+                  error={!!errors.akunDuaId}
+                />
+                {errors.akunDuaId && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.akunDuaId}
+                  </p>
+                )}
+              </div>
+
+              {/* Nominal */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Jumlah Nominal <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+                    Rp
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={templateForm.nominal}
+                    onChange={(e) =>
+                      updateTemplateForm("nominal", e.target.value)
+                    }
+                    placeholder="0"
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white ${
+                      errors.nominal ? "border-red-500" : "border-gray-300"
+                    }`}
+                  />
+                </div>
+                {templateForm.nominal && !errors.nominal && (
+                  <p className="mt-2 text-sm font-medium text-green-600">
+                    {formatCurrency(
+                      parseFloat(templateForm.nominal) || 0
+                    )}
+                  </p>
+                )}
+                {errors.nominal && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.nominal}
+                  </p>
+                )}
+              </div>
+
+              {/* Keterangan */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Keterangan Transaksi
+                </label>
+                <textarea
+                  value={templateForm.keterangan}
+                  onChange={(e) =>
+                    updateTemplateForm("keterangan", e.target.value)
+                  }
+                  rows={3}
+                  placeholder="Masukkan keterangan singkat transaksi..."
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Preview Entries - hanya untuk mode edit */}
+        {isEditMode && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
+                3
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800">
+                Entri Jurnal
+              </h3>
+            </div>
+            
+            <div className="space-y-4">
+              {entries.map((entry, index) => (
+                <div
+                  key={entry.id}
+                  className="border border-gray-200 rounded-lg p-4"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-semibold text-gray-700">
+                      Entri #{index + 1}
+                    </h4>
+                    {entries.length > 1 && (
+                      <button
+                        onClick={() => removeEntry(entry.id)}
+                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
+                        title="Hapus Entry"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Pembatasan - di atas sebelum memilih akun */}
+                  <div className="mb-4">
+                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={entry.hasRestriction}
+                          onChange={(e) =>
+                            updateEntry(entry.id, "hasRestriction", e.target.checked)
+                          }
+                          className="w-5 h-5 mt-0.5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium text-gray-800">
+                              Dengan Pembatasan dari Pemberi Sumber Daya
+                            </span>
+                            {entry.hasRestriction && (
+                              <span className="px-2 py-0.5 text-xs font-semibold text-orange-700 bg-orange-200 rounded">
+                                Aktif
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-600">
+                            Centang jika dana ini memiliki pembatasan penggunaan. 
+                            Akun yang ditampilkan akan difilter berdasarkan pilihan ini.
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Akun */}
@@ -429,7 +894,15 @@ const JurnalFormPage = () => {
                     Akun <span className="text-red-500">*</span>
                   </label>
                   <SearchableSelect
-                    options={activeCOA}
+                    options={
+                      entry.hasRestriction
+                        ? activeCOA.filter(
+                            (coa) => coa.restriction === "DENGAN_PEMBATASAN"
+                          )
+                        : activeCOA.filter(
+                            (coa) => coa.restriction === "TANPA_PEMBATASAN"
+                          )
+                    }
                     value={entry.akunId}
                     onChange={(value) => updateEntry(entry.id, "akunId", value)}
                     placeholder="Pilih Akun"
@@ -637,75 +1110,49 @@ const JurnalFormPage = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white"
                   />
                 </div>
-
-                {/* Pembatasan */}
-                <div className="md:col-span-2">
-                  <label className="flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50">
-                    <input
-                      type="checkbox"
-                      checked={entry.hasRestriction}
-                      onChange={(e) =>
-                        updateEntry(entry.id, "hasRestriction", e.target.checked)
-                      }
-                      className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                    />
-                    <div className="flex-1">
-                      <span className="text-sm font-medium text-gray-700">
-                        Dengan Pembatasan dari Pemberi Sumber Daya
-                      </span>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Centang jika dana ini memiliki pembatasan penggunaan (contoh: shodaqoh untuk pembangunan WC)
-                      </p>
-                    </div>
-                    {entry.hasRestriction && (
-                      <span className="px-2 py-1 text-xs font-semibold text-orange-700 bg-orange-100 rounded">
-                        Terbatas
-                      </span>
-                    )}
-                  </label>
-                </div>
-
               </div>
             </div>
-          ))}
-        </div>
+              ))}
+            </div>
 
-        {/* Add Entry Button */}
-        {!isEditMode && (
-          <button
-            onClick={addEntry}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-green-500 hover:text-green-600 hover:bg-green-50 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Tambah Entry
-          </button>
+            {/* Add Entry Button */}
+            <button
+              onClick={addEntry}
+              className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-green-500 hover:text-green-600 hover:bg-green-50 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Tambah Entri
+            </button>
+          </div>
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-3">
-          <button
-            onClick={handleBack}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Batal
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Menyimpan...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                Simpan
-              </>
-            )}
-          </button>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex gap-3">
+            <button
+              onClick={handleBack}
+              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Menyimpan...
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  Simpan Transaksi
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Preview Modal */}

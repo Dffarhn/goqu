@@ -400,3 +400,208 @@ export const formatSaldo = (saldo) => {
   return formatCurrency(saldo);
 };
 
+/**
+ * Helper: filter akun berdasarkan tipe front-end (tipeAkun)
+ */
+export const getAsetKasBank = (accounts = []) => {
+  return accounts.filter(
+    (akun) =>
+      !akun.isGroup &&  // Hanya detail accounts
+      akun.tipeAkun === "ASET" &&
+      akun.isActive &&
+      (akun.kodeAkun?.startsWith("1.1.01") ||
+        akun.kodeAkun?.startsWith("1.1.02") ||
+        akun.namaAkun?.toLowerCase().includes("kas") ||
+        akun.namaAkun?.toLowerCase().includes("bank"))
+  );
+};
+
+export const getPendapatanAccounts = (accounts = []) => {
+  return accounts.filter(
+    (akun) => !akun.isGroup && akun.tipeAkun === "PENDAPATAN" && akun.isActive
+  );
+};
+
+export const getBebanAccounts = (accounts = []) => {
+  return accounts.filter(
+    (akun) => !akun.isGroup && akun.tipeAkun === "BEBAN" && akun.isActive
+  );
+};
+
+export const getHutangAccounts = (accounts = []) => {
+  return accounts.filter(
+    (akun) =>
+      !akun.isGroup &&
+      akun.tipeAkun === "KEWAJIBAN" &&
+      akun.isActive &&
+      akun.namaAkun?.toLowerCase().includes("hutang")
+  );
+};
+
+export const getPiutangAccounts = (accounts = []) => {
+  return accounts.filter(
+    (akun) =>
+      !akun.isGroup &&
+      akun.tipeAkun === "ASET" &&
+      akun.isActive &&
+      akun.namaAkun?.toLowerCase().includes("piutang")
+  );
+};
+
+/**
+ * Build jurnal entries berdasarkan jenis transaksi template.
+ *
+ * @param {string} jenisTransaksi - "PEMASUKAN" | "PENGELUARAN" | "HUTANG" | "BAYAR_HUTANG" | "PIUTANG" | "DIBAYAR_PIUTANG"
+ * @param {Object} params
+ * @param {string} params.akunSatuId - Akun pertama (makna tergantung jenis transaksi)
+ * @param {string} params.akunDuaId - Akun kedua (makna tergantung jenis transaksi)
+ * @param {number|string} params.nominal - Jumlah transaksi
+ * @param {string} params.keterangan - Keterangan transaksi
+ * @param {boolean} params.hasRestriction - Dengan pembatasan atau tidak
+ * @param {Array} params.coaList - Daftar akun (frontend format)
+ * @returns {Array} entries siap kirim ke backend (sebelum transformJurnalForBackend)
+ */
+export const buildEntriesFromTransactionType = (
+  jenisTransaksi,
+  { akunSatuId, akunDuaId, nominal, keterangan = "", hasRestriction = false, coaList = [] }
+) => {
+  const amount = typeof nominal === "string" ? parseFloat(nominal) : nominal;
+
+  if (!jenisTransaksi) {
+    throw new Error("Jenis transaksi harus dipilih");
+  }
+
+  if (!akunSatuId || !akunDuaId) {
+    throw new Error("Akun sumber dan tujuan harus dipilih");
+  }
+
+  if (!amount || isNaN(amount) || amount <= 0) {
+    throw new Error("Nominal harus lebih dari 0");
+  }
+
+  const akunSatu = coaList.find((a) => a.id === akunSatuId);
+  const akunDua = coaList.find((a) => a.id === akunDuaId);
+
+  if (!akunSatu || !akunDua) {
+    throw new Error("Akun yang dipilih tidak ditemukan");
+  }
+
+  const baseEntry = {
+    hasRestriction: !!hasRestriction,
+    keterangan: keterangan || "",
+  };
+
+  switch (jenisTransaksi) {
+    case "PEMASUKAN": {
+      // Diterima dari: Pendapatan (akunSatuId)
+      // Simpan ke: Aset Kas/Bank (akunDuaId)
+      return [
+        {
+          ...baseEntry,
+          akunId: akunDuaId,
+          tipe: "DEBIT",
+          jumlah: amount,
+        },
+        {
+          ...baseEntry,
+          akunId: akunSatuId,
+          tipe: "KREDIT",
+          jumlah: amount,
+        },
+      ];
+    }
+    case "PENGELUARAN": {
+      // Dikeluarkan dari: Aset Kas/Bank (akunSatuId)
+      // Dipakai untuk: Beban (akunDuaId)
+      return [
+        {
+          ...baseEntry,
+          akunId: akunDuaId,
+          tipe: "DEBIT",
+          jumlah: amount,
+        },
+        {
+          ...baseEntry,
+          akunId: akunSatuId,
+          tipe: "KREDIT",
+          jumlah: amount,
+        },
+      ];
+    }
+    case "HUTANG": {
+      // Diterima dari: Hutang (akunSatuId)
+      // Simpan ke: Beban atau Aset (akunDuaId)
+      return [
+        {
+          ...baseEntry,
+          akunId: akunDuaId,
+          tipe: "DEBIT",
+          jumlah: amount,
+        },
+        {
+          ...baseEntry,
+          akunId: akunSatuId,
+          tipe: "KREDIT",
+          jumlah: amount,
+        },
+      ];
+    }
+    case "BAYAR_HUTANG": {
+      // Dibayar dari: Aset Kas/Bank (akunSatuId)
+      // Bayar hutang: Hutang (akunDuaId)
+      return [
+        {
+          ...baseEntry,
+          akunId: akunDuaId,
+          tipe: "DEBIT",
+          jumlah: amount,
+        },
+        {
+          ...baseEntry,
+          akunId: akunSatuId,
+          tipe: "KREDIT",
+          jumlah: amount,
+        },
+      ];
+    }
+    case "PIUTANG": {
+      // Diterima dari: Pendapatan (akunSatuId)
+      // Simpan ke: Piutang (akunDuaId)
+      return [
+        {
+          ...baseEntry,
+          akunId: akunDuaId,
+          tipe: "DEBIT",
+          jumlah: amount,
+        },
+        {
+          ...baseEntry,
+          akunId: akunSatuId,
+          tipe: "KREDIT",
+          jumlah: amount,
+        },
+      ];
+    }
+    case "DIBAYAR_PIUTANG": {
+      // Diterima dari: Piutang (akunSatuId)
+      // Simpan ke: Aset Kas/Bank (akunDuaId)
+      return [
+        {
+          ...baseEntry,
+          akunId: akunDuaId,
+          tipe: "DEBIT",
+          jumlah: amount,
+        },
+        {
+          ...baseEntry,
+          akunId: akunSatuId,
+          tipe: "KREDIT",
+          jumlah: amount,
+        },
+      ];
+    }
+    default:
+      throw new Error("Jenis transaksi tidak dikenal");
+  }
+};
+

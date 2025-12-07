@@ -43,6 +43,7 @@ const navItems = [
     children: [
       { label: "Chart of Accounts", to: "/admin/coa" },
       { label: "Input Jurnal", to: "/admin/jurnal" },
+      { label: "Buku Besar", to: "/admin/buku-besar" },
       { label: "Laporan dari Jurnal", to: "/admin/laporan-jurnal" },
     ],
   },

@@ -13,7 +13,211 @@
 
 ## Overview
 
-Sistem jurnal akuntansi ini dirancang untuk menghasilkan laporan keuangan otomatis dari transaksi jurnal. Sistem menggunakan single-entry bookkeeping dimana setiap transaksi dicatat sebagai satu entri jurnal (bukan double-entry).
+Sistem jurnal akuntansi ini dirancang untuk menghasilkan laporan keuangan otomatis dari transaksi jurnal. Sistem mendukung **multi-entry per transaksi** (mirip konsep double-entry), dimana satu transaksi jurnal dapat memiliki beberapa entri DEBIT dan KREDIT yang saling berhubungan.
+
+Pada versi terbaru, sistem juga menyediakan **template 6 jenis transaksi** untuk memudahkan takmir masjid menginput jurnal tanpa harus memahami detail debit/kredit secara langsung.
+
+### 6 Jenis Transaksi Template
+
+Template ini hanya mengatur cara input di frontend. Backend tetap menerima data dalam bentuk transaksi jurnal dengan array `entries` seperti biasa.
+
+1. **Pemasukan**
+   - Tujuan: mencatat pendapatan/infaq/donasi/uang masuk lain.
+   - Pola akun:
+     - Diterima dari: Akun `PENDAPATAN`
+     - Simpan ke: Akun `ASET` (Kas/Bank)
+   - Jurnal otomatis:
+     - DEBIT: Kas / Bank (akun aset)
+     - KREDIT: Pendapatan xxx (akun pendapatan)
+
+   **Contoh payload:**
+
+   ```json
+   {
+     "tanggal": "2025-12-02",
+     "keterangan": "Infaq Jumat ke kas masjid",
+     "entries": [
+       {
+         "akunId": "coa_kas",
+         "tipe": "DEBIT",
+         "jumlah": 500000,
+         "keterangan": "Infaq Jumat"
+       },
+       {
+         "akunId": "coa_pendapatan_infaq",
+         "tipe": "KREDIT",
+         "jumlah": 500000,
+         "keterangan": "Infaq Jumat"
+       }
+     ]
+   }
+   ```
+
+2. **Pengeluaran**
+   - Tujuan: mencatat beban/biaya/penyaluran dana.
+   - Pola akun:
+     - Dikeluarkan dari: Akun `ASET` (Kas/Bank)
+     - Dipakai untuk: Akun `BEBAN`
+   - Jurnal otomatis:
+     - DEBIT: Beban xxx
+     - KREDIT: Kas / Bank
+
+   **Contoh payload:**
+
+   ```json
+   {
+     "tanggal": "2025-12-02",
+     "keterangan": "Bayar listrik masjid",
+     "entries": [
+       {
+         "akunId": "coa_beban_listrik",
+         "tipe": "DEBIT",
+         "jumlah": 300000,
+         "keterangan": "Bayar listrik"
+       },
+       {
+         "akunId": "coa_kas",
+         "tipe": "KREDIT",
+         "jumlah": 300000,
+         "keterangan": "Bayar listrik"
+       }
+     ]
+   }
+   ```
+
+3. **Hutang**
+   - Tujuan: ketika masjid menerima barang/jasa tetapi belum membayar.
+   - Pola akun:
+     - Diterima dari: Akun `KEWAJIBAN` (Hutang)
+     - Simpan ke:
+       - Akun `BEBAN` (jika hutang karena beban)
+       - Akun `ASET TETAP` / `ASET LANCAR` lain (jika hutang karena beli aset)
+   - Jurnal otomatis:
+     - Jika hutang karena beban:
+       - DEBIT: Beban xxx
+       - KREDIT: Hutang
+     - Jika hutang karena beli aset:
+       - DEBIT: Aset Tetap / Aset xxx
+       - KREDIT: Hutang
+
+   **Contoh payload (hutang beban):**
+
+   ```json
+   {
+     "tanggal": "2025-12-02",
+     "keterangan": "Hutang listrik bulan ini",
+     "entries": [
+       {
+         "akunId": "coa_beban_listrik",
+         "tipe": "DEBIT",
+         "jumlah": 300000,
+         "keterangan": "Listrik bulan ini"
+       },
+       {
+         "akunId": "coa_hutang_usaha",
+         "tipe": "KREDIT",
+         "jumlah": 300000,
+         "keterangan": "Listrik bulan ini"
+       }
+     ]
+   }
+   ```
+
+4. **Bayar Hutang**
+   - Tujuan: mencatat pembayaran hutang yang sudah dicatat sebelumnya.
+   - Pola akun:
+     - Dibayar dari: Akun `ASET` (Kas/Bank)
+     - Bayar hutang: Akun `KEWAJIBAN` (Hutang)
+   - Jurnal otomatis:
+     - DEBIT: Hutang
+     - KREDIT: Kas / Bank
+
+   **Contoh payload:**
+
+   ```json
+   {
+     "tanggal": "2025-12-10",
+     "keterangan": "Bayar hutang listrik",
+     "entries": [
+       {
+         "akunId": "coa_hutang_usaha",
+         "tipe": "DEBIT",
+         "jumlah": 300000,
+         "keterangan": "Pelunasan hutang listrik"
+       },
+       {
+         "akunId": "coa_kas",
+         "tipe": "KREDIT",
+         "jumlah": 300000,
+         "keterangan": "Pelunasan hutang listrik"
+       }
+     ]
+   }
+   ```
+
+5. **Piutang**
+   - Tujuan: mencatat ketika masjid memberikan jasa/menyewakan fasilitas tetapi pembayaran belum diterima.
+   - Pola akun:
+     - Diterima dari: Akun `PENDAPATAN`
+     - Simpan ke: Akun `PIUTANG` (tipe `ASET`)
+   - Jurnal otomatis:
+     - DEBIT: Piutang
+     - KREDIT: Pendapatan
+
+   **Contoh payload:**
+
+   ```json
+   {
+     "tanggal": "2025-12-05",
+     "keterangan": "Sewa aula dibayar minggu depan",
+     "entries": [
+       {
+         "akunId": "coa_piutang_sewa",
+         "tipe": "DEBIT",
+         "jumlah": 1000000,
+         "keterangan": "Piutang sewa aula"
+       },
+       {
+         "akunId": "coa_pendapatan_sewa",
+         "tipe": "KREDIT",
+         "jumlah": 1000000,
+         "keterangan": "Piutang sewa aula"
+       }
+     ]
+   }
+   ```
+
+6. **Dibayar Piutang**
+   - Tujuan: mencatat penerimaan pembayaran dari piutang.
+   - Pola akun:
+     - Diterima dari: Akun `PIUTANG`
+     - Simpan ke: Akun `ASET` (Kas/Bank)
+   - Jurnal otomatis:
+     - DEBIT: Kas / Bank
+     - KREDIT: Piutang
+
+   **Contoh payload:**
+
+   ```json
+   {
+     "tanggal": "2025-12-12",
+     "keterangan": "Pelunasan piutang sewa aula",
+     "entries": [
+       {
+         "akunId": "coa_kas",
+         "tipe": "DEBIT",
+         "jumlah": 1000000,
+         "keterangan": "Pelunasan piutang sewa"
+       },
+       {
+         "akunId": "coa_piutang_sewa",
+         "tipe": "KREDIT",
+         "jumlah": 1000000,
+         "keterangan": "Pelunasan piutang sewa"
+       }
+     ]
+   }
+   ```
 
 ### Fitur Utama
 
