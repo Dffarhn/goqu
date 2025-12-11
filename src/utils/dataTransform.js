@@ -169,6 +169,9 @@ export const transformAccountForBackend = (accountData) => {
     type: typeMap[accountData.tipeAkun] || accountData.type,
     isGroup: false, // Always false - hanya bisa create non-group account
     masjidId: accountData.masjidId || null,
+    restriction: accountData.restriction || null,
+    report: accountData.report || null,
+    category: accountData.category || accountData.kategori || null,
     isActive: accountData.isActive !== undefined ? accountData.isActive : true,
   };
 };

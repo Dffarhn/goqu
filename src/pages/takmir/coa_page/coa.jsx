@@ -8,6 +8,8 @@ import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 
 const COAPage = () => {
+  const masjid = JSON.parse(localStorage.getItem("masjid") || "{}");
+  const masjidId = masjid?.id;
   const [coaList, setCoaList] = useState([]); // Hanya detail accounts untuk tampilan table
   const [allAccounts, setAllAccounts] = useState([]); // Semua accounts untuk form modal
   const [showForm, setShowForm] = useState(false);
@@ -22,7 +24,10 @@ const COAPage = () => {
   const loadAccounts = async () => {
     try {
       setLoading(true);
-      const accounts = await getAllAccounts({ includeInactive: false });
+      const accounts = await getAllAccounts({
+        includeInactive: false,
+        masjidId,
+      });
       const transformedAccounts = transformAccounts(accounts);
       
       // Simpan semua accounts untuk form modal
@@ -75,6 +80,7 @@ const COAPage = () => {
   const handleSave = async (formData) => {
     try {
       const backendData = transformAccountForBackend(formData);
+      backendData.masjidId = formData.masjidId || masjidId || null;
 
       if (editingCOA) {
         // Edit existing
@@ -146,6 +152,7 @@ const COAPage = () => {
           <COAFormModal
             coa={editingCOA}
             coaList={allAccounts}
+            masjidId={masjidId}
             onSave={handleSave}
             onCancel={handleCancel}
           />
@@ -156,14 +163,18 @@ const COAPage = () => {
 };
 
 // COA Form Modal Component
-const COAFormModal = ({ coa, coaList, onSave, onCancel }) => {
+const COAFormModal = ({ coa, coaList, masjidId, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     kodeAkun: coa?.kodeAkun || "",
     namaAkun: coa?.namaAkun || "",
     tipeAkun: coa?.tipeAkun || "ASET",
     kategori: coa?.kategori || "",
+    category: coa?.category || "",
+    restriction: coa?.restriction || "",
+    report: coa?.report || "",
     isActive: coa?.isActive ?? true,
     parentId: coa?.parentId || "",
+    masjidId: coa?.masjidId || masjidId || "",
   });
 
   const [errors, setErrors] = useState({});
@@ -197,12 +208,13 @@ const COAFormModal = ({ coa, coaList, onSave, onCancel }) => {
 
     setGeneratingCode(true);
     try {
-      const nextCode = await getNextAccountCode(parentId);
+      const nextCode = await getNextAccountCode(parentId, masjidId);
       setFormData({
         ...formData,
         parentId,
         kodeAkun: nextCode,
         kategori: parentName, // Auto-fill kategori dari parent name
+        category: parentName,
       });
     } catch (error) {
       console.error("Error generating code:", error);
@@ -231,7 +243,17 @@ const COAFormModal = ({ coa, coaList, onSave, onCancel }) => {
       newErrors.namaAkun = "Nama akun harus diisi";
     }
 
-    // Kategori akan otomatis terisi dari parent, tidak perlu validasi manual
+    if (!formData.category.trim()) {
+      newErrors.category = "Category wajib diisi";
+    }
+
+    if (!formData.restriction.trim()) {
+      newErrors.restriction = "Restriction wajib diisi";
+    }
+
+    if (!formData.report.trim()) {
+      newErrors.report = "Report wajib diisi";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -378,36 +400,79 @@ const COAFormModal = ({ coa, coaList, onSave, onCancel }) => {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Kategori <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.kategori}
-              onChange={(e) =>
-                setFormData({ ...formData, kategori: e.target.value })
-              }
-              readOnly={!coa} // Read-only untuk create baru (otomatis dari parent)
-              placeholder={
-                !coa
-                  ? "Akan terisi otomatis dari parent account"
-                  : "Contoh: Aset Lancar"
-              }
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 ${
-                !coa ? "bg-gray-50 cursor-not-allowed" : "bg-white"
-              } ${
-                errors.kategori ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            {errors.kategori && (
-              <p className="mt-1 text-sm text-red-600">{errors.kategori}</p>
-            )}
-            {!coa && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category (backend enum) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    category: e.target.value,
+                    kategori: e.target.value,
+                  })
+                }
+                placeholder="Contoh: BEBAN, PENDAPATAN, ASET_NETO, ASET_LANCAR"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 ${
+                  errors.category ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors.category && (
+                <p className="mt-1 text-sm text-red-600">{errors.category}</p>
+              )}
               <p className="mt-1 text-xs text-gray-500">
-                Kategori akan otomatis terisi dari nama parent account
+                Wajib sesuai enum backend (lihat dokumen).
               </p>
-            )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Restriction <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.restriction}
+                onChange={(e) =>
+                  setFormData({ ...formData, restriction: e.target.value })
+                }
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white ${
+                  errors.restriction ? "border-red-500" : "border-gray-300"
+                }`}
+              >
+                <option value="">Pilih Restriction</option>
+                <option value="TANPA_PEMBATASAN">TANPA_PEMBATASAN</option>
+                <option value="DENGAN_PEMBATASAN">DENGAN_PEMBATASAN</option>
+              </select>
+              {errors.restriction && (
+                <p className="mt-1 text-sm text-red-600">{errors.restriction}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Report <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.report}
+                onChange={(e) =>
+                  setFormData({ ...formData, report: e.target.value })
+                }
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white ${
+                  errors.report ? "border-red-500" : "border-gray-300"
+                }`}
+              >
+                <option value="">Pilih Report</option>
+                <option value="NERACA">NERACA</option>
+                <option value="LAPORAN_PENGHASILAN_KOMPREHENSIF">
+                  LAPORAN_PENGHASILAN_KOMPREHENSIF
+                </option>
+              </select>
+              {errors.report && (
+                <p className="mt-1 text-sm text-red-600">{errors.report}</p>
+              )}
+            </div>
           </div>
 
           <div>

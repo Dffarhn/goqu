@@ -148,12 +148,13 @@ export const seedDefaultCOA = async (params = {}) => {
 /**
  * Get next available account code for a parent
  * @param {string} parentId - Parent account ID
+ * @param {string} [masjidId] - Optional masjid ID for custom COA
  * @returns {Promise<string>} Next available code
  */
-export const getNextAccountCode = async (parentId) => {
+export const getNextAccountCode = async (parentId, masjidId) => {
   try {
     const response = await axiosInstance.get("/coa/next-code", {
-      params: { parentId },
+      params: { parentId, masjidId },
     });
     return response.data.data.code;
   } catch (error) {

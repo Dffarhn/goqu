@@ -262,7 +262,12 @@ const COATable = ({
                   {(onEdit || onDelete) && (
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
-                        {onEdit && (
+                      {!coa.masjidId && (
+                        <span className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-100 rounded">
+                          Default
+                        </span>
+                      )}
+                      {onEdit && coa.masjidId && (
                           <button
                             onClick={() => onEdit(coa)}
                             className="text-blue-600 hover:text-blue-900 p-1.5 rounded hover:bg-blue-50 transition-colors"
@@ -271,7 +276,7 @@ const COATable = ({
                             <Edit2 className="w-4 h-4" />
                           </button>
                         )}
-                        {onDelete && (
+                      {onDelete && coa.masjidId && (
                           <button
                             onClick={() => onDelete(coa)}
                             className="text-red-600 hover:text-red-900 p-1.5 rounded hover:bg-red-50 transition-colors"
