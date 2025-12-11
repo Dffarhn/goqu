@@ -18,6 +18,9 @@ const LaporanKeuanganJurnalPage = () => {
   const [tanggal, setTanggal] = useState(
     new Date().toISOString().split("T")[0]
   );
+  const [tahunPerubahan, setTahunPerubahan] = useState(
+    new Date().getFullYear().toString()
+  );
   const [tanggalAwal, setTanggalAwal] = useState(
     new Date(new Date().setMonth(new Date().getMonth() - 1))
       .toISOString()
@@ -34,7 +37,7 @@ const LaporanKeuanganJurnalPage = () => {
   // Generate laporan saat tab atau tanggal berubah
   useEffect(() => {
     generateLaporan();
-  }, [activeTab, tanggal, tanggalAwal, tanggalAkhir]);
+  }, [activeTab, tanggal, tanggalAwal, tanggalAkhir, tahunPerubahan]);
 
   const generateLaporan = async () => {
     try {
@@ -55,7 +58,7 @@ const LaporanKeuanganJurnalPage = () => {
           data = transformLabaRugiData(data);
           break;
         case "perubahan-ekuitas":
-          data = await generatePerubahanEkuitasAPI(tanggalAwal, tanggalAkhir);
+          data = await generatePerubahanEkuitasAPI(tahunPerubahan);
           // Transform untuk memastikan semua angka adalah number
           data = transformPerubahanEkuitasData(data);
           break;
@@ -296,7 +299,7 @@ const LaporanKeuanganJurnalPage = () => {
           {/* Filter Section */}
           <div className="p-4 bg-gray-50 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row gap-4">
-              {activeTab === "neraca" ? (
+              {activeTab === "neraca" && (
                 <div className="flex-1">
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                     <Calendar className="w-4 h-4 text-gray-700" />
@@ -327,7 +330,9 @@ const LaporanKeuanganJurnalPage = () => {
                     </button>
                   </div>
                 </div>
-              ) : (
+              )}
+
+              {activeTab === "laba-rugi" && (
                 <>
                   <div className="flex-1">
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
@@ -390,6 +395,23 @@ const LaporanKeuanganJurnalPage = () => {
                     </div>
                   </div>
                 </>
+              )}
+
+              {activeTab === "perubahan-ekuitas" && (
+                <div className="flex-1">
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="w-4 h-4 text-gray-700" />
+                    <span>Tahun Laporan</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1900"
+                    max="2100"
+                    value={tahunPerubahan}
+                    onChange={(e) => setTahunPerubahan(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white"
+                  />
+                </div>
               )}
               <div className="flex items-end">
                 <button

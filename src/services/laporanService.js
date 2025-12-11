@@ -56,27 +56,17 @@ export const generateLabaRugi = async (tanggalAwal, tanggalAkhir) => {
 };
 
 /**
- * Generate Perubahan Ekuitas (Laporan Perubahan Aset Neto)
- * @param {string} tanggalAwal - Start date (ISO string or date string)
- * @param {string} tanggalAkhir - End date (ISO string or date string)
+ * Generate Perubahan Ekuitas (Laporan Perubahan Aset Neto) tahunan
+ * @param {string|number} tahun - Tahun laporan (YYYY)
  * @returns {Promise<Object>} Perubahan Ekuitas data
  */
-export const generatePerubahanEkuitas = async (tanggalAwal, tanggalAkhir) => {
+export const generatePerubahanEkuitas = async (tahun) => {
   try {
-    // Convert to date strings if needed
-    const startStr = tanggalAwal.includes("T")
-      ? tanggalAwal.split("T")[0]
-      : tanggalAwal;
-    const endStr = tanggalAkhir.includes("T")
-      ? tanggalAkhir.split("T")[0]
-      : tanggalAkhir;
-
     const response = await axiosInstance.get(
       "/laporan-keuangan/jurnal/perubahan-aset-neto",
       {
         params: {
-          tanggalAwal: startStr,
-          tanggalAkhir: endStr,
+          tahun,
         },
       }
     );
@@ -178,29 +168,19 @@ export const generateLabaRugiPublic = async (masjidId, tanggalAwal, tanggalAkhir
 };
 
 /**
- * Generate Perubahan Ekuitas (Laporan Perubahan Aset Neto) - Public version
+ * Generate Perubahan Ekuitas (Laporan Perubahan Aset Neto) - Public version (tahunan)
  * @param {string} masjidId - Masjid ID
- * @param {string} tanggalAwal - Start date (ISO string or date string)
- * @param {string} tanggalAkhir - End date (ISO string or date string)
+ * @param {string|number} tahun - Tahun laporan (YYYY)
  * @returns {Promise<Object>} Perubahan Ekuitas data
  */
-export const generatePerubahanEkuitasPublic = async (masjidId, tanggalAwal, tanggalAkhir) => {
+export const generatePerubahanEkuitasPublic = async (masjidId, tahun) => {
   try {
-    // Convert to date strings if needed
-    const startStr = tanggalAwal.includes("T")
-      ? tanggalAwal.split("T")[0]
-      : tanggalAwal;
-    const endStr = tanggalAkhir.includes("T")
-      ? tanggalAkhir.split("T")[0]
-      : tanggalAkhir;
-
     const response = await axiosInstance.get(
       "/laporan-keuangan/public/jurnal/perubahan-aset-neto",
       {
         params: {
           masjidId,
-          tanggalAwal: startStr,
-          tanggalAkhir: endStr,
+          tahun,
         },
       }
     );

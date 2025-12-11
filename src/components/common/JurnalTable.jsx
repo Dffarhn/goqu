@@ -226,10 +226,7 @@ const JurnalTable = ({
                     {/* Entry Row */}
                     <tr className="hover:bg-gray-50 bg-white border-b border-gray-100">
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(entry.transactionTanggal).toLocaleTimeString("id-ID", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {new Date(entry.transactionTanggal).toISOString().split("T")[0]}
                       </td>
                       <td className="px-4 py-3">
                         <div>

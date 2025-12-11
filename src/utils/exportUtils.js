@@ -44,6 +44,8 @@ export const exportToPDF = (laporanData, laporanType, masjidName = "Masjid", per
       year: "numeric",
     });
     doc.text(`Periode: ${awalStr} - ${akhirStr}`, pageWidth / 2, 36, { align: "center" });
+  } else if (periode.tahun) {
+    doc.text(`Tahun: ${periode.tahun}`, pageWidth / 2, 36, { align: "center" });
   }
 
   let startY = 45;
@@ -602,6 +604,8 @@ const generatePerubahanEkuitasExcel = (data, masjidName, periode) => {
       year: "numeric",
     });
     rows.push([`Periode: ${awalStr} - ${akhirStr}`]);
+  } else if (periode.tahun) {
+    rows.push([`Tahun: ${periode.tahun}`]);
   }
   rows.push([]);
 

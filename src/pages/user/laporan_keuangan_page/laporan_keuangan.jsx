@@ -32,6 +32,9 @@ const LaporanKeuanganUserPage = () => {
   const [loading, setLoading] = useState(false);
   const [loadingCOA, setLoadingCOA] = useState(false);
   const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
+  const [tahunPerubahan, setTahunPerubahan] = useState(
+    new Date().getFullYear().toString()
+  );
   const [tanggalAwal, setTanggalAwal] = useState(
     new Date(new Date().setMonth(new Date().getMonth() - 1))
       .toISOString()
@@ -68,7 +71,7 @@ const LaporanKeuanganUserPage = () => {
     if (activeTab !== "coa" && masjidId) {
       generateLaporan();
     }
-  }, [activeTab, tanggal, tanggalAwal, tanggalAkhir, masjidId]);
+  }, [activeTab, tanggal, tanggalAwal, tanggalAkhir, tahunPerubahan, masjidId]);
 
   const loadCOAData = async () => {
     if (!masjidId) {
@@ -125,7 +128,7 @@ const LaporanKeuanganUserPage = () => {
           data = transformLabaRugiData(data);
           break;
         case "perubahan-ekuitas":
-          data = await generatePerubahanEkuitasAPI(masjidId, tanggalAwal, tanggalAkhir);
+          data = await generatePerubahanEkuitasAPI(masjidId, tahunPerubahan);
           data = transformPerubahanEkuitasData(data);
           break;
         default:
@@ -329,7 +332,7 @@ const LaporanKeuanganUserPage = () => {
         break;
       case "perubahan-ekuitas":
         laporanType = "perubahan-ekuitas";
-        periode = { tanggalAwal, tanggalAkhir };
+          periode = { tahun: tahunPerubahan };
         break;
       default:
         return;
@@ -365,7 +368,7 @@ const LaporanKeuanganUserPage = () => {
         break;
       case "perubahan-ekuitas":
         laporanType = "perubahan-ekuitas";
-        periode = { tanggalAwal, tanggalAkhir };
+          periode = { tahun: tahunPerubahan };
         break;
       default:
         return;
@@ -453,7 +456,7 @@ const LaporanKeuanganUserPage = () => {
               {activeTab !== "coa" && (
                 <div className="p-4 bg-gray-50 border-b border-gray-200">
                   <div className="flex flex-col sm:flex-row gap-4">
-                    {activeTab === "neraca" ? (
+                    {activeTab === "neraca" && (
                       <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           <Calendar className="inline w-4 h-4 mr-1" />
@@ -466,7 +469,8 @@ const LaporanKeuanganUserPage = () => {
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white"
                         />
                       </div>
-                    ) : (
+                    )}
+                    {activeTab === "laba-rugi" && (
                       <>
                         <div className="flex-1">
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -493,6 +497,22 @@ const LaporanKeuanganUserPage = () => {
                           />
                         </div>
                       </>
+                    )}
+                    {activeTab === "perubahan-ekuitas" && (
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <Calendar className="inline w-4 h-4 mr-1" />
+                          Tahun Laporan
+                        </label>
+                        <input
+                          type="number"
+                          min="1900"
+                          max="2100"
+                          value={tahunPerubahan}
+                          onChange={(e) => setTahunPerubahan(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white"
+                        />
+                      </div>
                     )}
                     <div className="flex items-end gap-2">
                       <button
