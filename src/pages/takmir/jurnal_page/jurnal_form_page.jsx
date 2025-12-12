@@ -446,6 +446,29 @@ const JurnalFormPage = () => {
     }
   }, []);
 
+  // Helper function untuk filter akun berdasarkan code prefix
+  const filterByCodePrefix = useCallback((accounts, prefixes) => {
+    return accounts.filter((acc) => {
+      if (!acc.kodeAkun) return false;
+      // Extract digit pertama dari code (handle format dengan titik atau tanpa titik)
+      let firstDigit = '';
+      if (acc.kodeAkun.includes('.')) {
+        // Format dengan titik: ambil bagian sebelum titik pertama
+        firstDigit = acc.kodeAkun.split('.')[0];
+      } else {
+        // Format tanpa titik: ambil digit pertama
+        // Contoh: "111101" -> ambil "1", "211101" -> ambil "2"
+        const match = acc.kodeAkun.match(/^(\d+)/);
+        if (match) {
+          // Ambil hanya digit pertama, bukan semua digit
+          firstDigit = acc.kodeAkun.charAt(0);
+        }
+      }
+      // Check jika digit pertama match dengan salah satu prefix
+      return prefixes.includes(firstDigit);
+    });
+  }, []);
+
   const asetKasBankAccounts = useMemo(
     () => filterByRestriction(getAsetKasBank(activeCOA), templateForm.hasRestriction),
     [activeCOA, templateForm.hasRestriction, filterByRestriction]
@@ -469,6 +492,24 @@ const JurnalFormPage = () => {
   const filteredActiveCOA = useMemo(
     () => filterByRestriction(activeCOA, templateForm.hasRestriction),
     [activeCOA, templateForm.hasRestriction, filterByRestriction]
+  );
+
+  // Filter untuk HUTANG - akun dengan code dimulai 1 dan 6 (untuk akunDua)
+  const hutangAkunDuaOptions = useMemo(
+    () => filterByRestriction(
+      filterByCodePrefix(activeCOA, ["1", "6"]),
+      templateForm.hasRestriction
+    ),
+    [activeCOA, templateForm.hasRestriction, filterByRestriction, filterByCodePrefix]
+  );
+
+  // Filter untuk PIUTANG - akun dengan code dimulai 1, 3, 4 (untuk akunSatu)
+  const piutangAkunSatuOptions = useMemo(
+    () => filterByRestriction(
+      filterByCodePrefix(activeCOA, ["1", "3", "4"]),
+      templateForm.hasRestriction
+    ),
+    [activeCOA, templateForm.hasRestriction, filterByRestriction, filterByCodePrefix]
   );
 
   const getTemplateConfig = () => {
@@ -501,7 +542,7 @@ const JurnalFormPage = () => {
           akunSatuLabel: "Diterima dari (Akun Hutang)",
           akunDuaLabel: "Simpan ke (Beban atau Aset)",
           akunSatuOptions: hutangAccounts,
-          akunDuaOptions: filteredActiveCOA,
+          akunDuaOptions: hutangAkunDuaOptions,
         };
       case "BAYAR_HUTANG":
         return {
@@ -520,7 +561,7 @@ const JurnalFormPage = () => {
             "Catat jasa/fasilitas yang belum dibayar jamaah. Sistem akan membuat jurnal: DEBIT Piutang, KREDIT Pendapatan.",
           akunSatuLabel: "Diterima dari (Akun Pendapatan)",
           akunDuaLabel: "Simpan ke (Akun Piutang)",
-          akunSatuOptions: pendapatanAccounts,
+          akunSatuOptions: piutangAkunSatuOptions,
           akunDuaOptions: piutangAccounts,
         };
       case "DIBAYAR_PIUTANG":

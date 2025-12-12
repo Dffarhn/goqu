@@ -433,18 +433,24 @@ export const getHutangAccounts = (accounts = []) => {
     (akun) =>
       !akun.isGroup &&
       akun.tipeAkun === "KEWAJIBAN" &&
-      akun.isActive &&
-      akun.namaAkun?.toLowerCase().includes("hutang")
+      akun.isActive
+      // Semua akun KEWAJIBAN adalah hutang/utang, tidak perlu filter berdasarkan nama
   );
 };
 
 export const getPiutangAccounts = (accounts = []) => {
   return accounts.filter(
-    (akun) =>
-      !akun.isGroup &&
-      akun.tipeAkun === "ASET" &&
-      akun.isActive &&
-      akun.namaAkun?.toLowerCase().includes("piutang")
+    (akun) => {
+      if (akun.isGroup || !akun.isActive || akun.tipeAkun !== "ASET") {
+        return false;
+      }
+      // Filter berdasarkan nama atau code prefix
+      // Code piutang: 113xxx (format tanpa titik) atau 1.1.3.x (format dengan titik)
+      const codeStr = akun.kodeAkun?.replace(/\./g, '') || '';
+      const hasPiutangName = akun.namaAkun?.toLowerCase().includes("piutang");
+      const hasPiutangCode = codeStr.startsWith("113");
+      return hasPiutangName || hasPiutangCode;
+    }
   );
 };
 
