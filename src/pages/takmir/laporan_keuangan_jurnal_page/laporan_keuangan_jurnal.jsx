@@ -403,14 +403,25 @@ const LaporanKeuanganJurnalPage = () => {
                     <Calendar className="w-4 h-4 text-gray-700" />
                     <span>Tahun Laporan</span>
                   </label>
-                  <input
-                    type="number"
-                    min="1900"
-                    max="2100"
+                  <select
                     value={tahunPerubahan}
                     onChange={(e) => setTahunPerubahan(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white"
-                  />
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white cursor-pointer hover:border-gray-400 transition-colors"
+                  >
+                    {(() => {
+                      const currentYear = new Date().getFullYear();
+                      const years = [];
+                      // Generate tahun dari 10 tahun lalu sampai 5 tahun ke depan
+                      for (let year = currentYear - 10; year <= currentYear + 5; year++) {
+                        years.push(year);
+                      }
+                      return years.map((year) => (
+                        <option key={year} value={year.toString()}>
+                          {year}
+                        </option>
+                      ));
+                    })()}
+                  </select>
                 </div>
               )}
               <div className="flex items-end">
