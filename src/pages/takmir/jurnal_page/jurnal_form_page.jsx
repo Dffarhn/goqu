@@ -513,10 +513,10 @@ const JurnalFormPage = () => {
     [activeCOA, templateForm.hasRestriction, filterByRestriction]
   );
 
-  // Filter untuk HUTANG - akun dengan code dimulai 1 dan 6 (untuk akunDua)
+  // Filter untuk HUTANG - akun dengan code dimulai 1 (Aset) dan 5 (Beban) (untuk akunDua)
   const hutangAkunDuaOptions = useMemo(
     () => filterByRestriction(
-      filterByCodePrefix(activeCOA, ["1", "6"]),
+      filterByCodePrefix(activeCOA, ["1", "5"]),
       templateForm.hasRestriction
     ),
     [activeCOA, templateForm.hasRestriction, filterByRestriction, filterByCodePrefix]
@@ -556,8 +556,8 @@ const JurnalFormPage = () => {
           title: "Pemasukan",
           description:
             "Catat pendapatan/infaq/donasi/uang masuk lain. Sistem akan membuat jurnal: DEBIT Kas/Bank, KREDIT Pendapatan.",
-          akunSatuLabel: "Diterima dari (Akun Pendapatan)",
-          akunDuaLabel: "Simpan ke (Kas/Bank)",
+          akunSatuLabel: "Sumber Pendapatan",
+          akunDuaLabel: "Disimpan ke",
           akunSatuOptions: pendapatanAccounts,
           akunDuaOptions: asetKasBankAccounts,
         };
@@ -566,8 +566,8 @@ const JurnalFormPage = () => {
           title: "Pengeluaran",
           description:
             "Catat beban/biaya/penyaluran dana. Sistem akan membuat jurnal: DEBIT Beban, KREDIT Kas/Bank.",
-          akunSatuLabel: "Dikeluarkan dari (Kas/Bank)",
-          akunDuaLabel: "Dipakai untuk (Akun Beban)",
+          akunSatuLabel: "Dikeluarkan dari",
+          akunDuaLabel: "Untuk Beban",
           akunSatuOptions: asetKasBankAccounts,
           akunDuaOptions: bebanAccounts,
         };
@@ -576,8 +576,8 @@ const JurnalFormPage = () => {
           title: "Hutang",
           description:
             "Catat penerimaan barang/jasa yang belum dibayar. Sistem akan membuat jurnal: DEBIT Beban/Aset, KREDIT Hutang.",
-          akunSatuLabel: "Diterima dari (Akun Hutang)",
-          akunDuaLabel: "Simpan ke (Beban atau Aset)",
+          akunSatuLabel: "Akun Hutang",
+          akunDuaLabel: "Untuk Beban/Aset",
           akunSatuOptions: hutangAccounts,
           akunDuaOptions: hutangAkunDuaOptions,
         };
@@ -586,8 +586,8 @@ const JurnalFormPage = () => {
           title: "Bayar Hutang",
           description:
             "Catat pembayaran hutang yang sudah tercatat. Sistem akan membuat jurnal: DEBIT Hutang, KREDIT Kas/Bank.",
-          akunSatuLabel: "Dibayar dari (Kas/Bank)",
-          akunDuaLabel: "Bayar hutang (Akun Hutang)",
+          akunSatuLabel: "Dibayar dari",
+          akunDuaLabel: "Bayar Hutang ke",
           akunSatuOptions: asetKasBankAccounts,
           akunDuaOptions: hutangAccounts,
         };
@@ -596,8 +596,8 @@ const JurnalFormPage = () => {
           title: "Piutang",
           description:
             "Catat jasa/fasilitas yang belum dibayar jamaah. Sistem akan membuat jurnal: DEBIT Piutang, KREDIT Pendapatan.",
-          akunSatuLabel: "Diterima dari (Akun Pendapatan)",
-          akunDuaLabel: "Simpan ke (Akun Piutang)",
+          akunSatuLabel: "Sumber Pendapatan",
+          akunDuaLabel: "Piutang ke",
           akunSatuOptions: piutangAkunSatuOptions,
           akunDuaOptions: piutangAccounts,
         };
@@ -606,8 +606,8 @@ const JurnalFormPage = () => {
           title: "Dibayar Piutang",
           description:
             "Catat penerimaan pelunasan piutang. Sistem akan membuat jurnal: DEBIT Kas/Bank, KREDIT Piutang.",
-          akunSatuLabel: "Diterima dari (Akun Piutang)",
-          akunDuaLabel: "Simpan ke (Kas/Bank atau Aset Neto)",
+          akunSatuLabel: "Terima Piutang dari",
+          akunDuaLabel: "Disimpan ke",
           akunSatuOptions: dibayarPiutangAkunSatuOptions, // Hanya akun dengan code dimulai 113
           akunDuaOptions: dibayarPiutangAkunDuaOptions, // Akun dengan code dimulai 1 dan 3
         };
