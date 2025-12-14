@@ -469,6 +469,25 @@ const JurnalFormPage = () => {
     });
   }, []);
 
+  // Helper function untuk filter akun berdasarkan 3 digit pertama (untuk code seperti "113")
+  const filterByThreeDigitPrefix = useCallback((accounts, prefixes) => {
+    return accounts.filter((acc) => {
+      if (!acc.kodeAkun) return false;
+      // Extract 3 digit pertama dari code
+      let threeDigits = '';
+      if (acc.kodeAkun.includes('.')) {
+        // Format dengan titik: ambil 3 digit pertama sebelum titik
+        const beforeDot = acc.kodeAkun.split('.')[0];
+        threeDigits = beforeDot.substring(0, 3);
+      } else {
+        // Format tanpa titik: ambil 3 digit pertama
+        threeDigits = acc.kodeAkun.substring(0, 3);
+      }
+      // Check jika 3 digit pertama match dengan salah satu prefix
+      return prefixes.includes(threeDigits);
+    });
+  }, []);
+
   const asetKasBankAccounts = useMemo(
     () => filterByRestriction(getAsetKasBank(activeCOA), templateForm.hasRestriction),
     [activeCOA, templateForm.hasRestriction, filterByRestriction]
@@ -507,6 +526,24 @@ const JurnalFormPage = () => {
   const piutangAkunSatuOptions = useMemo(
     () => filterByRestriction(
       filterByCodePrefix(activeCOA, ["1", "3", "4"]),
+      templateForm.hasRestriction
+    ),
+    [activeCOA, templateForm.hasRestriction, filterByRestriction, filterByCodePrefix]
+  );
+
+  // Filter untuk DIBAYAR_PIUTANG - akun dengan code dimulai 113 (untuk akunSatu)
+  const dibayarPiutangAkunSatuOptions = useMemo(
+    () => filterByRestriction(
+      filterByThreeDigitPrefix(activeCOA, ["113"]),
+      templateForm.hasRestriction
+    ),
+    [activeCOA, templateForm.hasRestriction, filterByRestriction, filterByThreeDigitPrefix]
+  );
+
+  // Filter untuk DIBAYAR_PIUTANG - akun dengan code dimulai 1 dan 3 (untuk akunDua)
+  const dibayarPiutangAkunDuaOptions = useMemo(
+    () => filterByRestriction(
+      filterByCodePrefix(activeCOA, ["1", "3"]),
       templateForm.hasRestriction
     ),
     [activeCOA, templateForm.hasRestriction, filterByRestriction, filterByCodePrefix]
@@ -570,9 +607,9 @@ const JurnalFormPage = () => {
           description:
             "Catat penerimaan pelunasan piutang. Sistem akan membuat jurnal: DEBIT Kas/Bank, KREDIT Piutang.",
           akunSatuLabel: "Diterima dari (Akun Piutang)",
-          akunDuaLabel: "Simpan ke (Kas/Bank)",
-          akunSatuOptions: piutangAccounts,
-          akunDuaOptions: asetKasBankAccounts,
+          akunDuaLabel: "Simpan ke (Kas/Bank atau Aset Neto)",
+          akunSatuOptions: dibayarPiutangAkunSatuOptions, // Hanya akun dengan code dimulai 113
+          akunDuaOptions: dibayarPiutangAkunDuaOptions, // Akun dengan code dimulai 1 dan 3
         };
       default:
         return null;
