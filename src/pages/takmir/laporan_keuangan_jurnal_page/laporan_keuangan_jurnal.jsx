@@ -8,13 +8,17 @@ import {
   generateLabaRugi as generateLabaRugiAPI,
   generatePerubahanEkuitas as generatePerubahanEkuitasAPI,
 } from "../../../services/laporanService";
-import { Calendar, Download, Loader2 } from "lucide-react";
+import { exportToPDF, exportToExcel } from "../../../utils/exportUtils";
+import { Calendar, Download, Loader2, FileText, FileSpreadsheet, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
+import axiosInstance from "../../../api/axiosInstance";
 
 const LaporanKeuanganJurnalPage = () => {
   const [activeTab, setActiveTab] = useState("neraca");
   const [laporanData, setLaporanData] = useState(null);
+  const [masjidData, setMasjidData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [tanggal, setTanggal] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -33,6 +37,33 @@ const LaporanKeuanganJurnalPage = () => {
   const tanggalInputRef = useRef(null);
   const tanggalAwalInputRef = useRef(null);
   const tanggalAkhirInputRef = useRef(null);
+  const exportMenuRef = useRef(null);
+
+  // Fetch masjid data
+  useEffect(() => {
+    const fetchMasjidData = async () => {
+      try {
+        const response = await axiosInstance.get("/masjid/takmir");
+        setMasjidData(response.data.data);
+      } catch (error) {
+        console.error("Error fetching masjid data:", error);
+      }
+    };
+    fetchMasjidData();
+  }, []);
+
+  // Close export menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Generate laporan saat tab atau tanggal berubah
   useEffect(() => {
@@ -250,6 +281,104 @@ const LaporanKeuanganJurnalPage = () => {
     };
   };
 
+  const handleExportPDF = () => {
+    console.log("=== START EXPORT PDF ===");
+    console.log("1. Checking laporanData:", laporanData);
+    
+    if (!laporanData) {
+      console.error("❌ Laporan data is null or undefined");
+      toast.error("Tidak ada data untuk di-export");
+      return;
+    }
+
+    const masjidName = masjidData?.Nama || masjidData?.namaMasjid || "Masjid";
+    console.log("2. Masjid Name:", masjidName);
+    console.log("3. Masjid Data:", masjidData);
+    
+    let periode = {};
+    let laporanType = "";
+
+    switch (activeTab) {
+      case "neraca":
+        laporanType = "neraca";
+        periode = { tanggal };
+        console.log("4. Laporan Type: Neraca, Tanggal:", tanggal);
+        break;
+      case "laba-rugi":
+        laporanType = "laba-rugi";
+        periode = { tanggalAwal, tanggalAkhir };
+        console.log("4. Laporan Type: Laba Rugi, Periode:", tanggalAwal, "to", tanggalAkhir);
+        break;
+      case "perubahan-ekuitas":
+        laporanType = "perubahan-ekuitas";
+        periode = { tahun: tahunPerubahan };
+        console.log("4. Laporan Type: Perubahan Ekuitas, Tahun:", tahunPerubahan);
+        break;
+      default:
+        console.error("❌ Unknown activeTab:", activeTab);
+        return;
+    }
+
+    console.log("5. Final Parameters:");
+    console.log("   - laporanType:", laporanType);
+    console.log("   - masjidName:", masjidName);
+    console.log("   - periode:", periode);
+    console.log("   - laporanData keys:", Object.keys(laporanData));
+    console.log("   - laporanData sample:", JSON.stringify(laporanData).substring(0, 200));
+
+    try {
+      console.log("6. Calling exportToPDF...");
+      exportToPDF(laporanData, laporanType, masjidName, periode);
+      console.log("✅ PDF export successful");
+      toast.success("Laporan berhasil di-export ke PDF");
+      setShowExportMenu(false);
+    } catch (error) {
+      console.error("❌ ERROR EXPORTING PDF:");
+      console.error("   - Error message:", error.message);
+      console.error("   - Error stack:", error.stack);
+      console.error("   - Full error:", error);
+      toast.error(`Gagal export ke PDF: ${error.message || "Unknown error"}`);
+    }
+    console.log("=== END EXPORT PDF ===");
+  };
+
+  const handleExportExcel = () => {
+    if (!laporanData) {
+      toast.error("Tidak ada data untuk di-export");
+      return;
+    }
+
+    const masjidName = masjidData?.Nama || masjidData?.namaMasjid || "Masjid";
+    let periode = {};
+    let laporanType = "";
+
+    switch (activeTab) {
+      case "neraca":
+        laporanType = "neraca";
+        periode = { tanggal };
+        break;
+      case "laba-rugi":
+        laporanType = "laba-rugi";
+        periode = { tanggalAwal, tanggalAkhir };
+        break;
+      case "perubahan-ekuitas":
+        laporanType = "perubahan-ekuitas";
+        periode = { tahun: tahunPerubahan };
+        break;
+      default:
+        return;
+    }
+
+    try {
+      exportToExcel(laporanData, laporanType, masjidName, periode);
+      toast.success("Laporan berhasil di-export ke Excel");
+      setShowExportMenu(false);
+    } catch (error) {
+      console.error("Error exporting Excel:", error);
+      toast.error("Gagal export ke Excel");
+    }
+  };
+
   const tabs = [
     { id: "neraca", label: "Laporan Posisi Keuangan", icon: "📊" },
     { id: "laba-rugi", label: "Laporan Penghasilan Komprehensif", icon: "📈" },
@@ -424,17 +553,41 @@ const LaporanKeuanganJurnalPage = () => {
                   </select>
                 </div>
               )}
-              <div className="flex items-end">
+              <div className="flex items-end relative" ref={exportMenuRef}>
                 <button
-                  onClick={() => {
-                    // Export functionality bisa ditambahkan di sini
-                    alert("Fitur export akan ditambahkan");
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  disabled={!laporanData || loading}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="w-4 h-4" />
                   Export
+                  <ChevronDown className="w-4 h-4" />
                 </button>
+
+                {showExportMenu && (
+                  <div className="absolute right-0 bottom-full mb-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+                    <button
+                      onClick={handleExportPDF}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <FileText className="w-5 h-5 text-red-600 flex-shrink-0" />
+                      <div>
+                        <div className="font-medium text-sm">Export ke PDF</div>
+                        <div className="text-xs text-gray-500">Format dokumen untuk cetak</div>
+                      </div>
+                    </button>
+                    <button
+                      onClick={handleExportExcel}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-200"
+                    >
+                      <FileSpreadsheet className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      <div>
+                        <div className="font-medium text-sm">Export ke Excel</div>
+                        <div className="text-xs text-gray-500">Format spreadsheet untuk analisis</div>
+                      </div>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

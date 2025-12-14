@@ -34,62 +34,6 @@ const TopCurve = () => (
   </svg>
 );
 
-const laporanList = [
-  {
-    title: "Laporan Atas Posisi Keuangan",
-    subtitle: "Donasi Siap Pakai",
-    description:
-      "Ringkasan komprehensif posisi keuangan organisasi per periode",
-    icon: Building2,
-    color: "from-blue-500 to-blue-600",
-    status: "Updated",
-    lastUpdate: "25 Mei 2025",
-    size: "2.4 MB",
-  },
-  {
-    title: "Laporan Penghasilan Komprehensif",
-    subtitle: "Donasi Siap Pakai",
-    description:
-      "Analisis detail pendapatan dan beban operasional periode berjalan",
-    icon: TrendingUp,
-    color: "from-emerald-500 to-emerald-600",
-    status: "Updated",
-    lastUpdate: "25 Mei 2025",
-    size: "1.8 MB",
-  },
-  {
-    title: "Laporan Perubahan Aset Neto",
-    subtitle: "Donasi Siap Pakai",
-    description: "Tracking perubahan aset bersih dan equity organisasi",
-    icon: FileText,
-    color: "from-purple-500 to-purple-600",
-    status: "Updated",
-    lastUpdate: "24 Mei 2025",
-    size: "1.2 MB",
-  },
-  {
-    title: "Laporan Arus Kas",
-    subtitle: "Donasi Siap Pakai",
-    description:
-      "Monitoring aliran kas masuk dan keluar dalam periode pelaporan",
-    icon: TrendingUp,
-    color: "from-orange-500 to-orange-600",
-    status: "Updated",
-    lastUpdate: "24 Mei 2025",
-    size: "1.6 MB",
-  },
-  {
-    title: "Catatan atas Laporan Keuangan",
-    subtitle: "Donasi Siap Pakai",
-    description: "Penjelasan detail dan metodologi laporan keuangan",
-    icon: FileText,
-    color: "from-indigo-500 to-indigo-600",
-    status: "Updated",
-    lastUpdate: "23 Mei 2025",
-    size: "3.1 MB",
-  },
-];
-
 // Icon components
 const LocationIcon = () => (
   <svg
@@ -380,185 +324,12 @@ const DonationExpenses = ({ expenses }) => {
   );
 };
 
-const LaporanKeuangan = ({ dataLaporanMasjid = [], masjidId = null }) => {
+const LaporanKeuangan = ({ masjidId = null }) => {
   const navigate = useNavigate();
-  const JENIS_LAPORAN_ENUM = {
-    POSISI_KEUANGAN: "POSISI_KEUANGAN",
-    PENGHASILAN_KOMPREHENSIF: "PENGHASILAN_KOMP",
-    PERUBAHAN_ASET_NETO: "PERUBAHAN_ASET_NETO",
-    ARUS_KAS: "ARUS_KAS",
-    CATATAN_LAPORAN_KEUANGAN: "CATATAN",
-    LAPORAN_KEUANGAN_BULANAN: "KEUANGAN_BULANAN",
-    LAPORAN_KEUANGAN_TAHUNAN: "KEUANGAN_TAHUNAN",
-  };
-
-  // Static template data with jenis mapping
-  const laporanTemplates = [
-    {
-      jenis: "POSISI_KEUANGAN",
-      jenisEnum: JENIS_LAPORAN_ENUM.POSISI_KEUANGAN,
-      title: "Laporan Atas Posisi Keuangan",
-      subtitle: "Donasi Siap Pakai",
-      description:
-        "Ringkasan komprehensif posisi keuangan organisasi per periode",
-      icon: Building2,
-      color: "from-blue-500 to-blue-600",
-      templateSize: "156 KB",
-    },
-    {
-      jenis: "PENGHASILAN_KOMP",
-      jenisEnum: JENIS_LAPORAN_ENUM.PENGHASILAN_KOMPREHENSIF,
-      title: "Laporan Penghasilan Komprehensif",
-      subtitle: "Donasi Siap Pakai",
-      description:
-        "Analisis detail pendapatan dan beban operasional periode berjalan",
-      icon: TrendingUp,
-      color: "from-emerald-500 to-emerald-600",
-      templateSize: "142 KB",
-    },
-    {
-      jenis: "PERUBAHAN_ASET_NETO",
-      jenisEnum: JENIS_LAPORAN_ENUM.PERUBAHAN_ASET_NETO,
-      title: "Laporan Perubahan Aset Neto",
-      subtitle: "Donasi Siap Pakai",
-      description: "Tracking perubahan aset bersih dan equity organisasi",
-      icon: FileText,
-      color: "from-purple-500 to-purple-600",
-      templateSize: "128 KB",
-    },
-    {
-      jenis: "ARUS_KAS",
-      jenisEnum: JENIS_LAPORAN_ENUM.ARUS_KAS,
-      title: "Laporan Arus Kas",
-      subtitle: "Donasi Siap Pakai",
-      description:
-        "Monitoring aliran kas masuk dan keluar dalam periode pelaporan",
-      icon: TrendingUp,
-      color: "from-orange-500 to-orange-600",
-      templateSize: "134 KB",
-    },
-    {
-      jenis: "CATATAN",
-      jenisEnum: JENIS_LAPORAN_ENUM.CATATAN_LAPORAN_KEUANGAN,
-      title: "Catatan atas Laporan Keuangan",
-      subtitle: "Donasi Siap Pakai",
-      description: "Penjelasan detail dan metodologi laporan keuangan",
-      icon: FileText,
-      color: "from-indigo-500 to-indigo-600",
-      templateSize: "178 KB",
-    },
-    {
-      jenis: "KEUANGAN_BULANAN",
-      jenisEnum: JENIS_LAPORAN_ENUM.LAPORAN_KEUANGAN_BULANAN,
-      title: "Laporan Keuangan Bulanan",
-      subtitle: "Donasi Siap Pakai",
-      description: "Penjelasan detail dan metodologi laporan keuangan",
-      icon: FileText,
-      color: "from-indigo-500 to-indigo-600",
-      templateSize: "178 KB",
-    },
-    {
-      jenis: "KEUANGAN_TAHUNAN",
-      jenisEnum: JENIS_LAPORAN_ENUM.LAPORAN_KEUANGAN_TAHUNAN,
-      title: "Laporan Keuangan Tahunan",
-      subtitle: "Donasi Siap Pakai",
-      description: "Penjelasan detail dan metodologi laporan keuangan",
-      icon: FileText,
-      color: "from-indigo-500 to-indigo-600",
-      templateSize: "178 KB",
-    },
-  ];
-
-  // Process data - merge template with API data (hanya yang ada di API)
-  const laporanList = dataLaporanMasjid
-    .map((laporanAPI) => {
-      const template = laporanTemplates.find(
-        (t) => t.jenis === laporanAPI.jenis
-      );
-
-      if (!template) {
-        console.warn(`Template not found for jenis: ${laporanAPI.jenis}`);
-        return null;
-      }
-
-      return {
-        ...template,
-        // API data
-        id: laporanAPI.id,
-        fileUrl: laporanAPI.fileUrl,
-        uploadedAt: laporanAPI.uploadedAt,
-        fileSizeKB: laporanAPI.fileSizeKB,
-
-        // Computed fields untuk display
-        status: "Tersedia",
-        period: new Date(laporanAPI.uploadedAt).toLocaleDateString("id-ID", {
-          month: "short",
-          year: "numeric",
-        }),
-        lastUpdate: new Date(laporanAPI.uploadedAt).toLocaleDateString(
-          "id-ID",
-          {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          }
-        ),
-        size: `${laporanAPI.fileSizeKB} KB`,
-        uploadedBy: "Takmir Masjid", // atau bisa dari API jika ada
-      };
-    })
-    .filter(Boolean); // Remove null entries
-
-  // Handler untuk melihat laporan
-  const handleViewReport = (laporan) => {
-    if (laporan.fileUrl) {
-      // Buka file di tab baru untuk preview
-      window.open(laporan.fileUrl, "_blank");
-      console.log(`Membuka laporan: ${laporan.title}`);
-    } else {
-      console.error("File URL tidak tersedia");
-    }
-  };
-
-  // Handler untuk download laporan
-  const handleDownloadReport = (laporan) => {
-    if (laporan.fileUrl) {
-      // Method 1: Direct download dengan fetch
-      fetch(laporan.fileUrl)
-        .then((response) => {
-          if (!response.ok) throw new Error("Network response was not ok");
-          return response.blob();
-        })
-        .then((blob) => {
-          const url = window.URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = `${laporan.title}.xlsx`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-        })
-        .catch((error) => {
-          console.error("Download error:", error);
-          // Fallback: buka di tab baru
-          window.open(laporan.fileUrl, "_blank");
-        });
-
-      console.log(`Mengunduh laporan: ${laporan.title}`);
-    } else {
-      console.error("File URL tidak tersedia");
-    }
-  };
-
-  // Get latest report date
-  const latestReport = laporanList.length > 0 
-    ? laporanList.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt))[0]
-    : null;
 
   return (
     <div className="space-y-6">
-      {/* Header Section - Enhanced */}
+      {/* Header Section */}
       <div className="text-center space-y-3 mb-8">
         <div className="flex items-center justify-center gap-2 mb-2">
           <div className="w-1 h-8 bg-gradient-to-b from-green-500 to-emerald-600 rounded-full"></div>
@@ -568,250 +339,96 @@ const LaporanKeuangan = ({ dataLaporanMasjid = [], masjidId = null }) => {
           <div className="w-1 h-8 bg-gradient-to-b from-green-500 to-emerald-600 rounded-full"></div>
         </div>
         <p className="text-gray-600 text-lg">
-          Laporan keuangan resmi yang telah dipublikasikan
+          Akses laporan keuangan real-time dari jurnal transaksi
         </p>
       </div>
 
-      {/* Button untuk Laporan Keuangan Real-time - Prominent */}
-      <div className="mb-8">
-        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex-1 min-w-[250px]">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                    <FileText className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-white mb-1">
-                      Laporan Keuangan Real-time
-                    </h3>
-                    <p className="text-white/90 text-sm">
-                      Akses laporan keuangan langsung dari jurnal transaksi
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 text-white/80 text-sm">
-                  <span className="flex items-center gap-1">
-                    <TrendingUp className="w-4 h-4" />
-                    Update Real-time
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    Data Terkini
-                  </span>
-                </div>
+      {/* Main CTA Card */}
+      <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-12 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -mr-48 -mt-48"></div>
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-white/10 rounded-full -ml-36 -mb-36"></div>
+        <div className="relative z-10">
+          <div className="text-center space-y-6">
+            <div className="flex justify-center">
+              <div className="p-6 bg-white/20 backdrop-blur-sm rounded-2xl">
+                <FileText className="w-16 h-16 text-white" />
               </div>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate(`/masjid/${masjidId || ''}/laporan-keuangan`);
-                }}
-                className="inline-flex items-center gap-3 px-8 py-4 bg-white text-green-600 font-bold rounded-xl hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 text-lg"
-              >
-                <FileText className="w-6 h-6" />
-                Lihat Laporan Real-time
-              </button>
             </div>
+            <div>
+              <h3 className="text-3xl font-bold text-white mb-3">
+                Laporan Keuangan Real-time
+              </h3>
+              <p className="text-white/90 text-lg max-w-2xl mx-auto">
+                Lihat laporan keuangan langsung dari jurnal transaksi. Data selalu update real-time dan dapat diakses kapan saja.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-6 text-white/90 text-sm">
+              <span className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Update Real-time
+              </span>
+              <span className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Data Terkini
+              </span>
+              <span className="flex items-center gap-2">
+                <Download className="w-5 h-5" />
+                Dapat Diunduh
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(`/masjid/${masjidId || ''}/laporan-keuangan`);
+              }}
+              className="inline-flex items-center gap-3 px-10 py-5 bg-white text-green-600 font-bold rounded-xl hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 text-lg mt-4"
+            >
+              <FileText className="w-6 h-6" />
+              Lihat Laporan Keuangan Real-time
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Summary Stats - Enhanced */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg border-2 border-blue-200 p-6 hover:shadow-xl transition-all duration-300">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-3 bg-blue-500 rounded-lg">
-              <FileText className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xs font-semibold text-blue-700 bg-blue-200 px-3 py-1 rounded-full">
-              Total
-            </span>
+      {/* Features Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <div className="bg-white rounded-xl shadow-lg border-2 border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
+          <div className="p-4 bg-blue-100 rounded-lg w-fit mb-4">
+            <FileText className="w-8 h-8 text-blue-600" />
           </div>
-          <p className="text-sm text-gray-600 mb-1">Total Laporan</p>
-          <p className="text-3xl font-bold text-gray-900">
-            {laporanList.length}
+          <h4 className="text-lg font-bold text-gray-900 mb-2">
+            Laporan Neraca
+          </h4>
+          <p className="text-sm text-gray-600">
+            Lihat posisi keuangan masjid dengan detail aset, kewajiban, dan ekuitas
           </p>
         </div>
 
-        {latestReport && (
-          <>
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-lg border-2 border-green-200 p-6 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-3 bg-green-500 rounded-lg">
-                  <Calendar className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-xs font-semibold text-green-700 bg-green-200 px-3 py-1 rounded-full">
-                  Terbaru
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 mb-1">Update Terakhir</p>
-              <p className="text-lg font-bold text-gray-900">
-                {latestReport.lastUpdate}
-              </p>
-            </div>
+        <div className="bg-white rounded-xl shadow-lg border-2 border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
+          <div className="p-4 bg-emerald-100 rounded-lg w-fit mb-4">
+            <TrendingUp className="w-8 h-8 text-emerald-600" />
+          </div>
+          <h4 className="text-lg font-bold text-gray-900 mb-2">
+            Laporan Laba Rugi
+          </h4>
+          <p className="text-sm text-gray-600">
+            Analisis pendapatan dan beban untuk melihat kinerja keuangan masjid
+          </p>
+        </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl shadow-lg border-2 border-purple-200 p-6 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-3 bg-purple-500 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-xs font-semibold text-purple-700 bg-purple-200 px-3 py-1 rounded-full">
-                  Periode
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 mb-1">Periode Terbaru</p>
-              <p className="text-lg font-bold text-gray-900">
-                {latestReport.period}
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl shadow-lg border-2 border-orange-200 p-6 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-3 bg-orange-500 rounded-lg">
-                  <Download className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-xs font-semibold text-orange-700 bg-orange-200 px-3 py-1 rounded-full">
-                  Ukuran
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 mb-1">Total Ukuran</p>
-              <p className="text-lg font-bold text-gray-900">
-                {laporanList.reduce((sum, l) => {
-                  const size = parseInt(l.size) || 0;
-                  return sum + size;
-                }, 0)} KB
-              </p>
-            </div>
-          </>
-        )}
+        <div className="bg-white rounded-xl shadow-lg border-2 border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
+          <div className="p-4 bg-purple-100 rounded-lg w-fit mb-4">
+            <Banknote className="w-8 h-8 text-purple-600" />
+          </div>
+          <h4 className="text-lg font-bold text-gray-900 mb-2">
+            Laporan Arus Kas
+          </h4>
+          <p className="text-sm text-gray-600">
+            Monitoring aliran kas masuk dan keluar dalam periode tertentu
+          </p>
+        </div>
       </div>
-
-      {/* Reports Grid - Enhanced */}
-      {laporanList.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <span className="w-1 h-6 bg-gradient-to-b from-green-500 to-emerald-600 rounded-full"></span>
-              Laporan Keuangan Published
-            </h3>
-            <span className="text-sm text-gray-600">
-              {laporanList.length} laporan tersedia
-            </span>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {laporanList.map((laporan) => {
-              const IconComponent = laporan.icon;
-              return (
-                <div
-                  key={laporan.id}
-                  className="group bg-white rounded-2xl shadow-lg border-2 border-gray-100 overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:border-green-200"
-                >
-                  {/* Header with gradient */}
-                  <div
-                    className={`h-28 bg-gradient-to-r ${laporan.color} relative overflow-hidden`}
-                  >
-                    <div className="absolute inset-0 bg-black/10"></div>
-                    <div className="absolute -top-4 -right-4 w-32 h-32 bg-white/10 rounded-full"></div>
-                    <div className="absolute -bottom-2 -left-2 w-20 h-20 bg-white/10 rounded-full"></div>
-                    <div className="relative p-6 flex items-center justify-between h-full">
-                      <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                        <IconComponent className="w-7 h-7 text-white" />
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <span className="px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-semibold rounded-full">
-                          {laporan.status}
-                        </span>
-                        {laporan === latestReport && (
-                          <span className="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded-full animate-pulse">
-                            Terbaru
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-6 space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between">
-                        <h3 className="text-lg font-bold text-gray-900 group-hover:text-green-600 transition-colors duration-300 leading-tight">
-                          {laporan.title}
-                        </h3>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full flex-shrink-0 ml-2">
-                          {laporan.period}
-                        </span>
-                      </div>
-
-                      <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
-                        {laporan.description}
-                      </p>
-                    </div>
-
-                    {/* Meta info */}
-                    <div className="space-y-2 pt-3 border-t border-gray-100">
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {laporan.lastUpdate}
-                        </span>
-                        <span className="font-medium bg-gray-100 px-2 py-1 rounded">
-                          {laporan.size}
-                        </span>
-                      </div>
-                      <div className="flex items-center text-xs text-gray-500">
-                        <User className="w-3 h-3 mr-1" />
-                        <span>Dipublikasikan oleh {laporan.uploadedBy}</span>
-                      </div>
-                    </div>
-
-                    {/* Actions - User dapat melihat dan download */}
-                    <div className="flex gap-2 pt-3">
-                      <button
-                        onClick={() => handleViewReport(laporan)}
-                        className="flex-1 py-2.5 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-semibold rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-                      >
-                        <Eye className="w-4 h-4" />
-                        Lihat
-                      </button>
-                      <button
-                        onClick={() => handleDownloadReport(laporan)}
-                        className="py-2.5 px-4 bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-200 transition-all duration-300 flex items-center justify-center group border border-gray-200"
-                        title="Download Laporan"
-                      >
-                        <Download className="w-4 h-4 group-hover:animate-bounce" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Empty State - jika tidak ada laporan */}
-      {laporanList.length === 0 && (
-        <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-gray-200">
-          <div className="bg-gray-200 rounded-full w-28 h-28 flex items-center justify-center mx-auto mb-6">
-            <FileText className="w-14 h-14 text-gray-400" />
-          </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">
-            Belum Ada Laporan Tersedia
-          </h3>
-          <p className="text-gray-600 text-lg mb-6 max-w-md mx-auto">
-            Laporan keuangan akan ditampilkan setelah dipublikasikan oleh admin masjid
-          </p>
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-            <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-            <span>Gunakan Laporan Real-time untuk melihat data terkini</span>
-            <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -819,7 +436,7 @@ function DetailMasjid() {
   const { id } = useParams();
   const [masjidData, setMasjidData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("laporankeuangan");
 
   const [stats, setStats] = useState({
     cashIn: { total: 0 },
@@ -1072,11 +689,9 @@ function DetailMasjid() {
                       <FileText className="w-4 h-4" />
                       Lihat Laporan
                     </button>
-                    {masjidData?.laporanMasjid && masjidData.laporanMasjid.length > 0 && (
-                      <p className="text-xs text-white/80 mt-3 text-center">
-                        {masjidData.laporanMasjid.length} laporan tersedia
-                      </p>
-                    )}
+                    <p className="text-xs text-white/80 mt-3 text-center">
+                      Laporan keuangan real-time tersedia
+                    </p>
                   </div>
                 </div>
 
@@ -1152,7 +767,7 @@ function DetailMasjid() {
                     <h3 className="font-bold text-lg text-gray-900">Ringkasan</h3>
                   </div>
                   <div className="space-y-2 text-sm text-gray-700">
-                    <p>• {masjidData?.laporanMasjid?.length || 0} Laporan Keuangan</p>
+                    <p>• Laporan Keuangan Real-time</p>
                     <p>• {masjidData?.fasilitasMasjid?.length || 0} Fasilitas</p>
                     <p>• {masjidData?.pengeluaran_donasi_masjid?.length || 0} Pengeluaran</p>
                   </div>
@@ -1232,7 +847,7 @@ function DetailMasjid() {
                           <h4 className="font-bold text-gray-900">Laporan</h4>
                         </div>
                         <p className="text-3xl font-bold text-gray-900 mb-1">
-                          {masjidData?.laporanMasjid?.length || 0}
+                          Real-time
                         </p>
                         <p className="text-sm text-gray-600">Laporan keuangan tersedia</p>
                         <button
@@ -1440,10 +1055,7 @@ function DetailMasjid() {
                       </h3>
                     </div>
                     <div className="space-y-4">
-                      <LaporanKeuangan
-                        dataLaporanMasjid={masjidData.laporanMasjid}
-                        masjidId={id}
-                      />
+                      <LaporanKeuangan masjidId={id} />
                     </div>
                   </div>
                 )}

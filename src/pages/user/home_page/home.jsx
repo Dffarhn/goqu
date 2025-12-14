@@ -21,7 +21,11 @@ function HomeUser() {
       <Hero isHome={true} />
       <MosqueCardSection />
 
-      <MosqueCardSection title="Masjid Disekitar Kamu" seeMoreUrl="/donation?search=Masjid Disekitar Kamu"/>
+      <MosqueCardSection 
+        title="Masjid Disekitar Kamu" 
+        seeMoreUrl="/donation?search=Masjid Disekitar Kamu"
+        showEmptyState={false}
+      />
 
       <CallToAction login={true} />
       <Footer />

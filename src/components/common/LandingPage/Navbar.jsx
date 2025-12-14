@@ -104,6 +104,11 @@ const Navbar = ({ position = "fixed", user = null }) => {
                     onClick={() => navigate("/riwayat")}
                     icon="📋"
                   />
+                  <NavLink 
+                    text="Masjid Terdaftar" 
+                    onClick={() => navigate("/masjid-terdaftar")}
+                    icon="🕌"
+                  />
                   
                   {/* Enhanced User Profile Dropdown */}
                   <div className="relative" ref={dropdownRef}>
@@ -238,6 +243,7 @@ const Navbar = ({ position = "fixed", user = null }) => {
                 <div className="space-y-2">
                   <MobileNavLink text="🏠 Dashboard" onClick={() => navigate("/home")} />
                   <MobileNavLink text="📋 Riwayat Donasi" onClick={() => navigate("/riwayat")} />
+                  <MobileNavLink text="🕌 Masjid Terdaftar" onClick={() => navigate("/masjid-terdaftar")} />
                   
                   {/* Enhanced Mobile User Info */}
                   <div className="mx-4 my-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">

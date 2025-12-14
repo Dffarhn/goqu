@@ -1,16 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import TakmirLayout from "../../../layouts/takmir_layout";
 import { getAllAccounts } from "../../../services/coaService";
 import { getAllJurnals } from "../../../services/jurnalService";
 import { transformAccounts, transformJurnals } from "../../../utils/dataTransform";
 import formatCurrency from "../../../utils/formatCurrency";
 import { hitungSaldoAkun } from "../../../utils/jurnalUtils";
-import { Calendar, Loader2 } from "lucide-react";
+import { exportBukuBesarToPDF, exportBukuBesarToExcel } from "../../../utils/exportUtils";
+import { Calendar, Loader2, Download, FileText, FileSpreadsheet, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
+import axiosInstance from "../../../api/axiosInstance";
 
 const BukuBesarPage = () => {
   const [coaList, setCoaList] = useState([]);
   const [jurnalList, setJurnalList] = useState([]);
+  const [masjidData, setMasjidData] = useState(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [tanggalAwal, setTanggalAwal] = useState(
     new Date(new Date().setMonth(new Date().getMonth() - 1))
       .toISOString()
@@ -20,6 +24,33 @@ const BukuBesarPage = () => {
     new Date().toISOString().split("T")[0]
   );
   const [loading, setLoading] = useState(true);
+  const exportMenuRef = useRef(null);
+
+  // Fetch masjid data
+  useEffect(() => {
+    const fetchMasjidData = async () => {
+      try {
+        const response = await axiosInstance.get("/masjid/takmir");
+        setMasjidData(response.data.data);
+      } catch (error) {
+        console.error("Error fetching masjid data:", error);
+      }
+    };
+    fetchMasjidData();
+  }, []);
+
+  // Close export menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -85,6 +116,44 @@ const BukuBesarPage = () => {
     .filter((r) => r.tipe === "KREDIT")
     .reduce((sum, r) => sum + (parseFloat(r.jumlah) || 0), 0);
 
+  const handleExportPDF = () => {
+    if (sortedEntries.length === 0) {
+      toast.error("Tidak ada data untuk di-export");
+      return;
+    }
+
+    const masjidName = masjidData?.Nama || masjidData?.namaMasjid || "Masjid";
+    const periode = { tanggalAwal, tanggalAkhir };
+
+    try {
+      exportBukuBesarToPDF(sortedEntries, masjidName, periode, totalDebit, totalKredit);
+      toast.success("Buku besar berhasil di-export ke PDF");
+      setShowExportMenu(false);
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast.error(`Gagal export ke PDF: ${error.message || "Unknown error"}`);
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (sortedEntries.length === 0) {
+      toast.error("Tidak ada data untuk di-export");
+      return;
+    }
+
+    const masjidName = masjidData?.Nama || masjidData?.namaMasjid || "Masjid";
+    const periode = { tanggalAwal, tanggalAkhir };
+
+    try {
+      exportBukuBesarToExcel(sortedEntries, masjidName, periode, totalDebit, totalKredit);
+      toast.success("Buku besar berhasil di-export ke Excel");
+      setShowExportMenu(false);
+    } catch (error) {
+      console.error("Error exporting Excel:", error);
+      toast.error(`Gagal export ke Excel: ${error.message || "Unknown error"}`);
+    }
+  };
+
   return (
     <TakmirLayout>
       <div className="space-y-6">
@@ -97,35 +166,75 @@ const BukuBesarPage = () => {
 
         {/* Filter Tanggal */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-800">Filter</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tanggal Awal
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="date"
-                  value={tanggalAwal}
-                  onChange={(e) => setTanggalAwal(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900 bg-white"
-                />
-              </div>
-            </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h2 className="text-lg font-semibold text-gray-800">Filter</h2>
+            <div className="flex items-center gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tanggal Awal
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="date"
+                      value={tanggalAwal}
+                      onChange={(e) => setTanggalAwal(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900 bg-white"
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tanggal Akhir
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="date"
-                  value={tanggalAkhir}
-                  onChange={(e) => setTanggalAkhir(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900 bg-white"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tanggal Akhir
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="date"
+                      value={tanggalAkhir}
+                      onChange={(e) => setTanggalAkhir(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900 bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-end relative" ref={exportMenuRef}>
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  disabled={sortedEntries.length === 0 || loading}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  <Download className="w-4 h-4" />
+                  Export
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+
+                {showExportMenu && (
+                  <div className="absolute right-0 bottom-full mb-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+                    <button
+                      onClick={handleExportPDF}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <FileText className="w-5 h-5 text-red-600 flex-shrink-0" />
+                      <div>
+                        <div className="font-medium text-sm">Export ke PDF</div>
+                        <div className="text-xs text-gray-500">Format dokumen untuk cetak</div>
+                      </div>
+                    </button>
+                    <button
+                      onClick={handleExportExcel}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-200"
+                    >
+                      <FileSpreadsheet className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      <div>
+                        <div className="font-medium text-sm">Export ke Excel</div>
+                        <div className="text-xs text-gray-500">Format spreadsheet untuk analisis</div>
+                      </div>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

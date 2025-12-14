@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MosqueCard from "../MosqueCard";
 import axiosInstance from "../../../api/axiosInstance";
+import { Heart, Building2 } from "lucide-react";
 
 const dummyMosques = [
   {
@@ -112,6 +113,7 @@ const MosqueCardSection = ({
   seeMoreUrl = "/donation?search=Masjid Membutuhkan Kamu Segera",
   position = "px-6 md:px-20 mt-12",
   limit = 3,
+  showEmptyState = true,
 }) => {
   const [donationCampaigns, setDonationCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -139,6 +141,33 @@ const MosqueCardSection = ({
     <section className={`${position}`}>
       {loading ? (
         <EnhancedLoadingScreen limit={limit} />
+      ) : donationCampaigns.length === 0 ? (
+        showEmptyState ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="text-center py-16 px-4">
+              <div className="relative mb-8 inline-block">
+                <div
+                  className="w-32 h-32 mx-auto rounded-full flex items-center justify-center shadow-lg"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(12, 104, 57, 0.2) 0%, rgba(17, 130, 75, 0.2) 50%, rgba(10, 79, 46, 0.2) 100%)",
+                  }}
+                >
+                  <Building2 className="w-16 h-16 text-green-600" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full animate-bounce flex items-center justify-center">
+                  <Heart className="w-4 h-4 text-white" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-700 mb-4">
+                Belum Ada Donasi
+              </h3>
+              <p className="text-gray-500 mb-8 max-w-md mx-auto">
+                Belum ada kampanye donasi yang tersedia saat ini. Kampanye donasi akan muncul di sini setelah ada yang mengajukan.
+              </p>
+            </div>
+          </div>
+        ) : null
       ) : (
         <>
           <div className="flex justify-between items-center mb-6">
@@ -168,26 +197,6 @@ const MosqueCardSection = ({
                 </svg>
               </button>
             )}
-            {/* <button
-          onClick={() => navigate(seeMoreUrl)}
-          className="bg-[#0473A8] hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm flex items-center transition"
-        >
-          Lihat Lebih banyak
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 ml-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 7l5 5m0 0l-5 5m5-5H6"
-            />
-          </svg>
-        </button> */}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

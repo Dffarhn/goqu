@@ -25,7 +25,7 @@ import JurnalPage from "./pages/takmir/jurnal_page/jurnal";
 import JurnalFormPage from "./pages/takmir/jurnal_page/jurnal_form_page";
 import LaporanKeuanganJurnalPage from "./pages/takmir/laporan_keuangan_jurnal_page/laporan_keuangan_jurnal";
 import LaporanKeuanganUserPage from "./pages/user/laporan_keuangan_page/laporan_keuangan";
-import BukuBesarPage from "./pages/takmir/buku_besar_page/buku_besar";
+import MasjidTerdaftarPage from "./pages/user/masjid_terdaftar_page/masjid_terdaftar";
 
 function App() {
   return (
@@ -35,6 +35,7 @@ function App() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/admin" element={<AdminAuthPage />} />
         <Route path="/riwayat" element={<RiwayatDonasiPage />} />
+        <Route path="/masjid-terdaftar" element={<MasjidTerdaftarPage />} />
         <Route path="/home" element={<HomeUser />} />
         <Route path="/masjid/:id" element={<DetailMasjid />} />
         <Route path="/masjid/:id/laporan-keuangan" element={<LaporanKeuanganUserPage />} />
@@ -54,7 +55,6 @@ function App() {
         <Route path="/admin/jurnal" element={<JurnalPage />} />
         <Route path="/admin/jurnal/tambah" element={<JurnalFormPage />} />
         <Route path="/admin/jurnal/edit/:id" element={<JurnalFormPage />} />
-        <Route path="/admin/buku-besar" element={<BukuBesarPage />} />
         <Route path="/admin/laporan-jurnal" element={<LaporanKeuanganJurnalPage />} />
         <Route
           path="/admin/masjid/identitas"

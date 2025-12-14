@@ -1,7 +1,7 @@
 import DonationCard from "../../../components/common/Dashboard_Takmir/DonationCardTakmir";
 import DonaturTableTakmir from "../../../components/common/Dashboard_Takmir/DonaturTableTakmir";
 import TakmirLayout from "../../../layouts/takmir_layout";
-import { Plus, Download, Calendar, PlusIcon } from "lucide-react"; // or replace these if you don't use Lucide
+import { Plus, Download, Calendar, PlusIcon, Users, Heart } from "lucide-react"; // or replace these if you don't use Lucide
 import formatCurrency from "../../../utils/formatCurrency";
 import { useEffect, useState } from "react";
 import axiosInstance from "../../../api/axiosInstance";
@@ -64,7 +64,20 @@ const DonaturTakmir = () => {
     fetchDonatur();
   }, []);
 
-  if (loading) return <p className="text-center">Loading donatur...</p>;
+  if (loading) {
+    return (
+      <TakmirLayout>
+        <div className="p-6">
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-200 border-t-green-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Memuat data donatur...</p>
+            </div>
+          </div>
+        </div>
+      </TakmirLayout>
+    );
+  }
 
   return (
     <TakmirLayout>
@@ -93,10 +106,38 @@ const DonaturTakmir = () => {
           </div>
         </div>
 
-        <DonaturTableTakmir
-          recentDonors={donatur}
-          formatCurrency={formatCurrency}
-        ></DonaturTableTakmir>
+        {/* Empty State */}
+        {donatur.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="text-center py-20 px-4">
+              <div className="relative mb-8 inline-block">
+                <div
+                  className="w-32 h-32 mx-auto rounded-full flex items-center justify-center shadow-lg"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(12, 104, 57, 0.2) 0%, rgba(17, 130, 75, 0.2) 50%, rgba(10, 79, 46, 0.2) 100%)",
+                  }}
+                >
+                  <Users className="w-16 h-16 text-green-600" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full animate-bounce flex items-center justify-center">
+                  <Heart className="w-4 h-4 text-white" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-700 mb-4">
+                Belum Ada Donasi
+              </h3>
+              <p className="text-gray-500 mb-8 max-w-md mx-auto">
+                Belum ada donatur yang melakukan donasi untuk masjid ini. Donasi akan muncul di sini setelah ada yang berdonasi.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <DonaturTableTakmir
+            recentDonors={donatur}
+            formatCurrency={formatCurrency}
+          ></DonaturTableTakmir>
+        )}
       </div>
     </TakmirLayout>
   );
