@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import TakmirLayout from "../../../layouts/takmir_layout";
 import COATable from "../../../components/common/COATable";
-import { getAllAccounts, createAccount, updateAccount, deleteAccount, getNextAccountCode } from "../../../services/coaService";
+import { getAllAccounts, createAccount, updateAccount, deleteAccount, getNextAccountCode, getValidParents } from "../../../services/coaService";
 import { transformAccounts, transformAccount, transformAccountForBackend } from "../../../utils/dataTransform";
-import { getDetailAccounts, getGroupAccounts } from "../../../utils/accountUtils";
+import { getDetailAccounts } from "../../../utils/accountUtils";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 
@@ -180,15 +180,33 @@ const COAFormModal = ({ coa, coaList, masjidId, onSave, onCancel }) => {
   const [errors, setErrors] = useState({});
   const [parentOptions, setParentOptions] = useState([]);
   const [generatingCode, setGeneratingCode] = useState(false);
+  const [loadingParents, setLoadingParents] = useState(false);
 
-  // Load parent options (hanya group accounts) saat form dibuka untuk create baru
+  // Load valid parent options dari backend saat form dibuka untuk create baru
   useEffect(() => {
     if (!coa) {
-      // Filter hanya group accounts menggunakan helper function
-      const groups = getGroupAccounts(coaList);
-      setParentOptions(groups);
+      loadValidParents();
     }
-  }, [coa, coaList]);
+  }, [coa]);
+
+  const loadValidParents = async () => {
+    try {
+      setLoadingParents(true);
+      const validParents = await getValidParents({ masjidId });
+      // Transform untuk format frontend jika diperlukan
+      const transformed = transformAccounts(validParents);
+      setParentOptions(transformed);
+    } catch (error) {
+      console.error("Error loading valid parents:", error);
+      toast.error(
+        error.response?.data?.message || "Gagal memuat daftar parent account"
+      );
+      // Fallback: gunakan empty array
+      setParentOptions([]);
+    } finally {
+      setLoadingParents(false);
+    }
+  };
 
   // Auto-generate code dan kategori saat parent dipilih
   const handleParentChange = async (parentId) => {
@@ -300,23 +318,36 @@ const COAFormModal = ({ coa, coaList, masjidId, onSave, onCancel }) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Parent Account (Group) <span className="text-red-500">*</span>
               </label>
-              <select
-                value={formData.parentId || ""}
-                onChange={(e) => handleParentChange(e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white ${
-                  errors.parentId ? "border-red-500" : "border-gray-300"
-                }`}
-              >
-                <option value="">Pilih Parent Account</option>
-                {parentOptions.map((parent) => (
-                  <option key={parent.id} value={parent.id}>
-                    {parent.kodeAkun} - {parent.namaAkun}
+              <div className="relative">
+                <select
+                  value={formData.parentId || ""}
+                  onChange={(e) => handleParentChange(e.target.value)}
+                  disabled={loadingParents}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white ${
+                    errors.parentId ? "border-red-500" : "border-gray-300"
+                  } ${loadingParents ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <option value="">
+                    {loadingParents ? "Memuat parent account..." : "Pilih Parent Account"}
                   </option>
-                ))}
-              </select>
+                  {parentOptions.map((parent) => (
+                    <option key={parent.id} value={parent.id}>
+                      {parent.kodeAkun} - {parent.namaAkun}
+                    </option>
+                  ))}
+                </select>
+                {loadingParents && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="w-5 h-5 animate-spin text-green-600" />
+                  </div>
+                )}
+              </div>
               {errors.parentId && (
                 <p className="mt-1 text-sm text-red-600">{errors.parentId}</p>
               )}
+              <p className="mt-1 text-xs text-gray-500">
+                Pilih parent account yang valid (group account level terakhir)
+              </p>
             </div>
           )}
 

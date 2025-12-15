@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import TakmirLayout from "../../../layouts/takmir_layout";
 import LaporanNeraca from "../../../components/common/LaporanNeraca";
 import LaporanLabaRugi from "../../../components/common/LaporanLabaRugi";
@@ -12,6 +12,7 @@ import { exportToPDF, exportToExcel } from "../../../utils/exportUtils";
 import { Calendar, Download, Loader2, FileText, FileSpreadsheet, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
 import axiosInstance from "../../../api/axiosInstance";
+import { debounce } from "../../../utils/debounce";
 
 const LaporanKeuanganJurnalPage = () => {
   const [activeTab, setActiveTab] = useState("neraca");
@@ -65,49 +66,8 @@ const LaporanKeuanganJurnalPage = () => {
     };
   }, []);
 
-  // Generate laporan saat tab atau tanggal berubah
-  useEffect(() => {
-    generateLaporan();
-  }, [activeTab, tanggal, tanggalAwal, tanggalAkhir, tahunPerubahan]);
-
-  const generateLaporan = async () => {
-    try {
-      setLoading(true);
-      setLaporanData(null);
-
-      let data = null;
-
-      switch (activeTab) {
-        case "neraca":
-          data = await generateNeracaAPI(tanggal);
-          // Transform data untuk komponen LaporanNeraca
-          data = transformNeracaData(data);
-          break;
-        case "laba-rugi":
-          data = await generateLabaRugiAPI(tanggalAwal, tanggalAkhir);
-          // Transform data untuk komponen LaporanLabaRugi
-          data = transformLabaRugiData(data);
-          break;
-        case "perubahan-ekuitas":
-          data = await generatePerubahanEkuitasAPI(tahunPerubahan);
-          // Transform untuk memastikan semua angka adalah number
-          data = transformPerubahanEkuitasData(data);
-          break;
-        default:
-          data = null;
-      }
-
-      setLaporanData(data);
-    } catch (error) {
-      console.error("Error generating laporan:", error);
-      toast.error(
-        error.response?.data?.message || "Gagal generate laporan"
-      );
-      setLaporanData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Cache untuk transform results
+  const transformCache = useRef(new Map());
 
   // Transform Neraca data dari backend ke format frontend
   const transformNeracaData = (data) => {
@@ -280,6 +240,108 @@ const LaporanKeuanganJurnalPage = () => {
       saldoAkhirEkuitas: toNumber(data.saldoAkhirEkuitas),
     };
   };
+
+  // Transform functions with caching
+  const transformNeracaDataCached = (data, cacheKey) => {
+    if (transformCache.current.has(cacheKey)) {
+      return transformCache.current.get(cacheKey);
+    }
+    const transformed = transformNeracaData(data);
+    transformCache.current.set(cacheKey, transformed);
+    return transformed;
+  };
+
+  const transformLabaRugiDataCached = (data, cacheKey) => {
+    if (transformCache.current.has(cacheKey)) {
+      return transformCache.current.get(cacheKey);
+    }
+    const transformed = transformLabaRugiData(data);
+    transformCache.current.set(cacheKey, transformed);
+    return transformed;
+  };
+
+  const transformPerubahanEkuitasDataCached = (data, cacheKey) => {
+    if (transformCache.current.has(cacheKey)) {
+      return transformCache.current.get(cacheKey);
+    }
+    const transformed = transformPerubahanEkuitasData(data);
+    transformCache.current.set(cacheKey, transformed);
+    return transformed;
+  };
+
+  // Generate laporan function
+  const generateLaporan = useCallback(async () => {
+    try {
+      setLoading(true);
+      setLaporanData(null);
+
+      // Create cache key based on tab and parameters
+      let cacheKey = `${activeTab}_`;
+      switch (activeTab) {
+        case "neraca":
+          cacheKey += tanggal;
+          break;
+        case "laba-rugi":
+          cacheKey += `${tanggalAwal}_${tanggalAkhir}`;
+          break;
+        case "perubahan-ekuitas":
+          cacheKey += tahunPerubahan;
+          break;
+        default:
+          cacheKey += "default";
+      }
+
+      // Check cache first
+      if (transformCache.current.has(cacheKey)) {
+        setLaporanData(transformCache.current.get(cacheKey));
+        setLoading(false);
+        return;
+      }
+
+      let data = null;
+
+      switch (activeTab) {
+        case "neraca":
+          data = await generateNeracaAPI(tanggal);
+          // Transform data untuk komponen LaporanNeraca
+          data = transformNeracaDataCached(data, cacheKey);
+          break;
+        case "laba-rugi":
+          data = await generateLabaRugiAPI(tanggalAwal, tanggalAkhir);
+          // Transform data untuk komponen LaporanLabaRugi
+          data = transformLabaRugiDataCached(data, cacheKey);
+          break;
+        case "perubahan-ekuitas":
+          data = await generatePerubahanEkuitasAPI(tahunPerubahan);
+          // Transform untuk memastikan semua angka adalah number
+          data = transformPerubahanEkuitasDataCached(data, cacheKey);
+          break;
+        default:
+          data = null;
+      }
+
+      setLaporanData(data);
+    } catch (error) {
+      console.error("Error generating laporan:", error);
+      toast.error(
+        error.response?.data?.message || "Gagal generate laporan"
+      );
+      setLaporanData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, tanggal, tanggalAwal, tanggalAkhir, tahunPerubahan]);
+
+  // Debounce generate laporan
+  const debouncedGenerate = useMemo(
+    () => debounce(() => generateLaporan(), 500),
+    [generateLaporan]
+  );
+
+  // Generate laporan saat tab atau tanggal berubah (with debounce)
+  useEffect(() => {
+    debouncedGenerate();
+  }, [debouncedGenerate]);
 
   const handleExportPDF = () => {
     console.log("=== START EXPORT PDF ===");

@@ -146,6 +146,23 @@ export const seedDefaultCOA = async (params = {}) => {
 };
 
 /**
+ * Get valid parent accounts (group accounts that can have detail children)
+ * Recommended endpoint for parent selection in create account form
+ * @param {Object} params - Query parameters
+ * @param {string} params.masjidId - Optional masjid ID (if not provided, uses logged in user's masjidId)
+ * @returns {Promise<Array>} Array of valid parent accounts
+ */
+export const getValidParents = async (params = {}) => {
+  try {
+    const response = await axiosInstance.get("/coa/valid-parents", { params });
+    return response.data.data || [];
+  } catch (error) {
+    console.error("Error fetching valid parents:", error);
+    throw error;
+  }
+};
+
+/**
  * Get next available account code for a parent
  * @param {string} parentId - Parent account ID
  * @param {string} [masjidId] - Optional masjid ID for custom COA

@@ -524,10 +524,11 @@ const JurnalFormPage = () => {
     [activeCOA, templateForm.hasRestriction, filterByRestriction, filterByCodePrefix]
   );
 
-  // Filter untuk PIUTANG - akun dengan code dimulai 1, 3, 4 (untuk akunSatu)
+  // Filter untuk PIUTANG - akun dengan code dimulai 1 (aset) dan 4 (pendapatan)
+  // Kode 3 (ekuitas/aset neto) tidak dimasukkan karena aset neto otomatis perhitungan sistem
   const piutangAkunSatuOptions = useMemo(
     () => filterByRestriction(
-      filterByCodePrefix(activeCOA, ["1", "3", "4"]),
+      filterByCodePrefix(activeCOA, ["1", "4"]),
       templateForm.hasRestriction
     ),
     [activeCOA, templateForm.hasRestriction, filterByRestriction, filterByCodePrefix]
@@ -542,10 +543,11 @@ const JurnalFormPage = () => {
     [activeCOA, templateForm.hasRestriction, filterByRestriction, filterByThreeDigitPrefix]
   );
 
-  // Filter untuk DIBAYAR_PIUTANG - akun dengan code dimulai 1 dan 3 (untuk akunDua)
+  // Filter untuk DIBAYAR_PIUTANG - akun dengan code dimulai 1 (aset)
+  // Kode 3 (ekuitas/aset neto) tidak dimasukkan karena aset neto otomatis perhitungan sistem
   const dibayarPiutangAkunDuaOptions = useMemo(
     () => filterByRestriction(
-      filterByCodePrefix(activeCOA, ["1", "3"]),
+      filterByCodePrefix(activeCOA, ["1"]),
       templateForm.hasRestriction
     ),
     [activeCOA, templateForm.hasRestriction, filterByRestriction, filterByCodePrefix]
@@ -600,7 +602,7 @@ const JurnalFormPage = () => {
             "Catat jasa/fasilitas yang belum dibayar jamaah. Sistem akan membuat jurnal: DEBIT Piutang, KREDIT Pendapatan.",
           akunSatuLabel: "Sumber Pendapatan",
           akunDuaLabel: "Piutang ke",
-          akunSatuOptions: piutangAkunSatuOptions,
+          akunSatuOptions: piutangAkunSatuOptions, // Hanya pendapatan, aset neto tidak dimasukkan karena otomatis perhitungan sistem
           akunDuaOptions: piutangAccounts,
         };
       case "DIBAYAR_PIUTANG":
@@ -611,7 +613,7 @@ const JurnalFormPage = () => {
           akunSatuLabel: "Terima Piutang dari",
           akunDuaLabel: "Disimpan ke",
           akunSatuOptions: dibayarPiutangAkunSatuOptions, // Hanya akun dengan code dimulai 113
-          akunDuaOptions: dibayarPiutangAkunDuaOptions, // Akun dengan code dimulai 1 dan 3
+          akunDuaOptions: dibayarPiutangAkunDuaOptions, // Hanya kas/bank, aset neto tidak dimasukkan karena otomatis perhitungan sistem
         };
       default:
         return null;

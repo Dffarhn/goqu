@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import TakmirLayout from "../../../layouts/takmir_layout";
 import JurnalTable from "../../../components/common/JurnalTable";
@@ -88,34 +88,38 @@ const JurnalPage = () => {
   };
 
 
-  // Transform saldoAkun dari backend format ke frontend format untuk display
-  const saldoAkunDisplay = Object.values(saldoAkun).map((item) => {
-    const account = item.account;
-    return {
-      akun: {
-        id: account.id,
-        kodeAkun: account.code,
-        namaAkun: account.name,
-      },
-      saldo: typeof item.saldo === "string" ? parseFloat(item.saldo) : item.saldo,
-    };
-  });
+  // Transform saldoAkun dari backend format ke frontend format untuk display - memoized
+  const saldoAkunDisplay = useMemo(() => {
+    return Object.values(saldoAkun).map((item) => {
+      const account = item.account;
+      return {
+        akun: {
+          id: account.id,
+          kodeAkun: account.code,
+          namaAkun: account.name,
+        },
+        saldo: typeof item.saldo === "string" ? parseFloat(item.saldo) : item.saldo,
+      };
+    });
+  }, [saldoAkun]);
 
-  // Calculate summary dari semua jurnal
-  const jurnalSummary = jurnalList.reduce(
-    (acc, jurnal) => {
-      jurnal.entries.forEach((entry) => {
-        const jumlah = parseFloat(entry.jumlah) || 0;
-        if (entry.tipe === "DEBIT") {
-          acc.totalDebit += jumlah;
-        } else {
-          acc.totalKredit += jumlah;
-        }
-      });
-      return acc;
-    },
-    { totalDebit: 0, totalKredit: 0 }
-  );
+  // Calculate summary dari semua jurnal - memoized
+  const jurnalSummary = useMemo(() => {
+    return jurnalList.reduce(
+      (acc, jurnal) => {
+        jurnal.entries.forEach((entry) => {
+          const jumlah = parseFloat(entry.jumlah) || 0;
+          if (entry.tipe === "DEBIT") {
+            acc.totalDebit += jumlah;
+          } else {
+            acc.totalKredit += jumlah;
+          }
+        });
+        return acc;
+      },
+      { totalDebit: 0, totalKredit: 0 }
+    );
+  }, [jurnalList]);
 
   const summaryBalance = Math.abs(jurnalSummary.totalDebit - jurnalSummary.totalKredit);
   const isSummaryBalanced = summaryBalance < 0.01;

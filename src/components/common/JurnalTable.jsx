@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Search, Filter, Edit2, Trash2, Calendar } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { Search, Filter, Edit2, Trash2, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import formatCurrency from "../../utils/formatCurrency";
 
 const JurnalTable = ({
@@ -14,46 +14,68 @@ const JurnalTable = ({
   const [filterTipe, setFilterTipe] = useState("ALL");
   const [tanggalAwal, setTanggalAwal] = useState("");
   const [tanggalAkhir, setTanggalAkhir] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
-  // Flatten transactions to entries - setiap entry menjadi baris terpisah
-  const allEntries = jurnalList.flatMap((transaction) => {
-    if (!transaction.entries || transaction.entries.length === 0) return [];
-    return transaction.entries.map((entry) => ({
-      ...entry,
-      transactionId: transaction.id,
-      transactionTanggal: transaction.tanggal,
-      transactionKeterangan: transaction.keterangan,
-      transactionReferensi: transaction.referensi,
-    }));
-  });
+  // Flatten transactions to entries - setiap entry menjadi baris terpisah - memoized
+  const allEntries = useMemo(() => {
+    return jurnalList.flatMap((transaction) => {
+      if (!transaction.entries || transaction.entries.length === 0) return [];
+      return transaction.entries.map((entry) => ({
+        ...entry,
+        transactionId: transaction.id,
+        transactionTanggal: transaction.tanggal,
+        transactionKeterangan: transaction.keterangan,
+        transactionReferensi: transaction.referensi,
+      }));
+    });
+  }, [jurnalList]);
 
-  // Filter entries
-  const filteredEntries = allEntries.filter((entry) => {
-    const matchSearch =
-      (entry.transactionKeterangan || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (entry.keterangan || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (entry.akun?.namaAkun || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (entry.akun?.kodeAkun || "").toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter entries - memoized
+  const filteredEntries = useMemo(() => {
+    return allEntries.filter((entry) => {
+      const matchSearch =
+        (entry.transactionKeterangan || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entry.keterangan || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entry.akun?.namaAkun || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entry.akun?.kodeAkun || "").toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchAkun = filterAkun === "ALL" || entry.akunId === filterAkun;
-    const matchTipe = filterTipe === "ALL" || entry.tipe === filterTipe;
+      const matchAkun = filterAkun === "ALL" || entry.akunId === filterAkun;
+      const matchTipe = filterTipe === "ALL" || entry.tipe === filterTipe;
 
-    const matchTanggal =
-      (!tanggalAwal || new Date(entry.transactionTanggal) >= new Date(tanggalAwal)) &&
-      (!tanggalAkhir || new Date(entry.transactionTanggal) <= new Date(tanggalAkhir));
+      const matchTanggal =
+        (!tanggalAwal || new Date(entry.transactionTanggal) >= new Date(tanggalAwal)) &&
+        (!tanggalAkhir || new Date(entry.transactionTanggal) <= new Date(tanggalAkhir));
 
-    return matchSearch && matchAkun && matchTipe && matchTanggal;
-  });
+      return matchSearch && matchAkun && matchTipe && matchTanggal;
+    });
+  }, [allEntries, searchTerm, filterAkun, filterTipe, tanggalAwal, tanggalAkhir]);
 
-  // Sort entries by date (newest first), then by transaction ID
-  const sortedEntries = [...filteredEntries].sort((a, b) => {
-    const dateA = new Date(a.transactionTanggal);
-    const dateB = new Date(b.transactionTanggal);
-    if (dateB.getTime() !== dateA.getTime()) {
-      return dateB.getTime() - dateA.getTime();
-    }
-    return b.transactionId.localeCompare(a.transactionId);
-  });
+  // Sort entries by date (newest first), then by transaction ID - memoized
+  const sortedEntries = useMemo(() => {
+    return [...filteredEntries].sort((a, b) => {
+      const dateA = new Date(a.transactionTanggal);
+      const dateB = new Date(b.transactionTanggal);
+      if (dateB.getTime() !== dateA.getTime()) {
+        return dateB.getTime() - dateA.getTime();
+      }
+      return b.transactionId.localeCompare(a.transactionId);
+    });
+  }, [filteredEntries]);
+
+  // Pagination - memoized
+  const paginatedEntries = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return sortedEntries.slice(start, start + itemsPerPage);
+  }, [sortedEntries, currentPage]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(sortedEntries.length / itemsPerPage);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterAkun, filterTipe, tanggalAwal, tanggalAkhir]);
 
   const getTipeColor = (tipe) => {
     return tipe === "DEBIT"
@@ -72,9 +94,15 @@ const JurnalTable = ({
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     handleFilterChange();
   }, [filterAkun, filterTipe, tanggalAwal, tanggalAkhir]);
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    // Scroll to top of table
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const activeCOA = coaList.filter((coa) => coa.isActive);
 
@@ -181,7 +209,7 @@ const JurnalTable = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {sortedEntries.length === 0 ? (
+            {paginatedEntries.length === 0 ? (
               <tr>
                 <td
                   colSpan={onEdit || onDelete ? 6 : 5}
@@ -191,11 +219,12 @@ const JurnalTable = ({
                 </td>
               </tr>
             ) : (
-              sortedEntries.map((entry, idx) => {
+              paginatedEntries.map((entry, idx) => {
                 // Group entries by date untuk menampilkan date header
                 const currentDate = new Date(entry.transactionTanggal).toISOString().split("T")[0];
+                // Check previous entry in paginated list, not full sorted list
                 const prevDate = idx > 0 
-                  ? new Date(sortedEntries[idx - 1].transactionTanggal).toISOString().split("T")[0]
+                  ? new Date(paginatedEntries[idx - 1].transactionTanggal).toISOString().split("T")[0]
                   : null;
                 const showDateHeader = currentDate !== prevDate;
 
@@ -294,11 +323,34 @@ const JurnalTable = ({
         </table>
       </div>
 
-      {/* Footer dengan info jumlah */}
-      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+      {/* Footer dengan info jumlah dan pagination */}
+      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <p className="text-sm text-gray-600">
-          Menampilkan {sortedEntries.length} entry
+          Menampilkan {paginatedEntries.length} dari {sortedEntries.length} entry
         </p>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="p-1.5 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Halaman sebelumnya"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-sm text-gray-600 px-2">
+              Halaman {currentPage} dari {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="p-1.5 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Halaman selanjutnya"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

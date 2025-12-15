@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import TakmirLayout from "../../../layouts/takmir_layout";
 import { getAllAccounts } from "../../../services/coaService";
 import { getAllJurnals } from "../../../services/jurnalService";
@@ -24,7 +24,9 @@ const BukuBesarPage = () => {
     new Date().toISOString().split("T")[0]
   );
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const exportMenuRef = useRef(null);
+  const itemsPerPage = 50;
 
   // Fetch masjid data
   useEffect(() => {
@@ -81,40 +83,68 @@ const BukuBesarPage = () => {
     loadData();
   }, []);
 
-  // Flatten semua entry jurnal dengan info transaksi
-  const allEntries = jurnalList.flatMap((trx) =>
-    (trx.entries || []).map((entry) => ({
-      ...entry,
-      transactionTanggal: trx.tanggal,
-      transactionId: trx.id,
-      transactionKeterangan: trx.keterangan,
-    }))
-  );
-
-  // Filter berdasarkan tanggal
-  const filteredEntries = allEntries.filter((entry) => {
-    const t = new Date(entry.transactionTanggal);
-    return (
-      (!tanggalAwal || t >= new Date(tanggalAwal)) &&
-      (!tanggalAkhir || t <= new Date(tanggalAkhir))
+  // Flatten semua entry jurnal dengan info transaksi - memoized
+  const allEntries = useMemo(() => {
+    return jurnalList.flatMap((trx) =>
+      (trx.entries || []).map((entry) => ({
+        ...entry,
+        transactionTanggal: trx.tanggal,
+        transactionId: trx.id,
+        transactionKeterangan: trx.keterangan,
+      }))
     );
-  });
+  }, [jurnalList]);
 
-  // Sort kronologis (terlama ke terbaru)
-  const sortedEntries = [...filteredEntries].sort((a, b) => {
-    const da = new Date(a.transactionTanggal).getTime();
-    const db = new Date(b.transactionTanggal).getTime();
-    if (da !== db) return da - db;
-    return (a.transactionId || "").localeCompare(b.transactionId || "");
-  });
+  // Filter berdasarkan tanggal - memoized
+  const filteredEntries = useMemo(() => {
+    return allEntries.filter((entry) => {
+      const t = new Date(entry.transactionTanggal);
+      return (
+        (!tanggalAwal || t >= new Date(tanggalAwal)) &&
+        (!tanggalAkhir || t <= new Date(tanggalAkhir))
+      );
+    });
+  }, [allEntries, tanggalAwal, tanggalAkhir]);
 
-  const totalDebit = sortedEntries
-    .filter((r) => r.tipe === "DEBIT")
-    .reduce((sum, r) => sum + (parseFloat(r.jumlah) || 0), 0);
+  // Sort kronologis (terlama ke terbaru) - memoized
+  const sortedEntries = useMemo(() => {
+    return [...filteredEntries].sort((a, b) => {
+      const da = new Date(a.transactionTanggal).getTime();
+      const db = new Date(b.transactionTanggal).getTime();
+      if (da !== db) return da - db;
+      return (a.transactionId || "").localeCompare(b.transactionId || "");
+    });
+  }, [filteredEntries]);
 
-  const totalKredit = sortedEntries
-    .filter((r) => r.tipe === "KREDIT")
-    .reduce((sum, r) => sum + (parseFloat(r.jumlah) || 0), 0);
+  // Calculate totals - memoized
+  const totals = useMemo(() => {
+    const debit = sortedEntries
+      .filter((r) => r.tipe === "DEBIT")
+      .reduce((sum, r) => sum + (parseFloat(r.jumlah) || 0), 0);
+    
+    const kredit = sortedEntries
+      .filter((r) => r.tipe === "KREDIT")
+      .reduce((sum, r) => sum + (parseFloat(r.jumlah) || 0), 0);
+    
+    return { debit, kredit };
+  }, [sortedEntries]);
+
+  const totalDebit = totals.debit;
+  const totalKredit = totals.kredit;
+
+  // Pagination - memoized
+  const paginatedEntries = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return sortedEntries.slice(start, start + itemsPerPage);
+  }, [sortedEntries, currentPage]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(sortedEntries.length / itemsPerPage);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tanggalAwal, tanggalAkhir]);
 
   const handleExportPDF = () => {
     if (sortedEntries.length === 0) {
@@ -152,6 +182,12 @@ const BukuBesarPage = () => {
       console.error("Error exporting Excel:", error);
       toast.error(`Gagal export ke Excel: ${error.message || "Unknown error"}`);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    // Scroll to top of table
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -291,7 +327,7 @@ const BukuBesarPage = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {sortedEntries.length === 0 ? (
+                    {paginatedEntries.length === 0 ? (
                       <tr>
                         <td
                           colSpan={6}
@@ -301,7 +337,7 @@ const BukuBesarPage = () => {
                         </td>
                       </tr>
                     ) : (
-                      sortedEntries.map((row, idx) => (
+                      paginatedEntries.map((row, idx) => (
                         <tr key={row.id || idx}>
                           <td className="px-4 py-2 text-sm text-gray-900 whitespace-nowrap">
                             {new Date(row.transactionTanggal).toLocaleDateString(
@@ -341,8 +377,31 @@ const BukuBesarPage = () => {
                   </tbody>
                 </table>
               </div>
-              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-sm text-gray-600">
-                Menampilkan {sortedEntries.length} transaksi
+              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <p className="text-sm text-gray-600">
+                  Menampilkan {paginatedEntries.length} dari {sortedEntries.length} transaksi
+                </p>
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Sebelumnya
+                    </button>
+                    <span className="text-sm text-gray-600">
+                      Halaman {currentPage} dari {totalPages}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Selanjutnya
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           )}

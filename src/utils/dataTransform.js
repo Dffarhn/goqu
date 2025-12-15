@@ -1,10 +1,26 @@
+// Cache untuk transform account
+const accountTransformCache = new Map();
+
 /**
- * Transform backend account format to frontend format
+ * Clear transform cache
+ * Call this when accounts are updated to ensure fresh data
+ */
+export const clearTransformCache = () => {
+  accountTransformCache.clear();
+};
+
+/**
+ * Transform backend account format to frontend format (with caching)
  * @param {Object} account - Backend account object
  * @returns {Object} Frontend account object
  */
 export const transformAccount = (account) => {
   if (!account) return null;
+
+  // Check cache first
+  if (accountTransformCache.has(account.id)) {
+    return accountTransformCache.get(account.id);
+  }
 
   // Map type from backend to frontend
   const typeMap = {
@@ -18,7 +34,7 @@ export const transformAccount = (account) => {
   // Get kategori from parent name or use default
   const kategori = account.parent?.name || "Lainnya";
 
-  return {
+  const transformed = {
     id: account.id,
     masjidId: account.masjidId,
     kodeAkun: account.code,
@@ -41,6 +57,10 @@ export const transformAccount = (account) => {
     createdAt: account.createdAt,
     updatedAt: account.updatedAt,
   };
+
+  // Cache the result
+  accountTransformCache.set(account.id, transformed);
+  return transformed;
 };
 
 /**

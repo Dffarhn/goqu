@@ -26,6 +26,7 @@ import JurnalFormPage from "./pages/takmir/jurnal_page/jurnal_form_page";
 import LaporanKeuanganJurnalPage from "./pages/takmir/laporan_keuangan_jurnal_page/laporan_keuangan_jurnal";
 import LaporanKeuanganUserPage from "./pages/user/laporan_keuangan_page/laporan_keuangan";
 import MasjidTerdaftarPage from "./pages/user/masjid_terdaftar_page/masjid_terdaftar";
+import BukuBesarPage from "./pages/takmir/buku_besar_page/buku_besar";
 
 function App() {
   return (
@@ -55,6 +56,7 @@ function App() {
         <Route path="/admin/jurnal" element={<JurnalPage />} />
         <Route path="/admin/jurnal/tambah" element={<JurnalFormPage />} />
         <Route path="/admin/jurnal/edit/:id" element={<JurnalFormPage />} />
+        <Route path="/admin/buku-besar" element={<BukuBesarPage />} />
         <Route path="/admin/laporan-jurnal" element={<LaporanKeuanganJurnalPage />} />
         <Route
           path="/admin/masjid/identitas"
